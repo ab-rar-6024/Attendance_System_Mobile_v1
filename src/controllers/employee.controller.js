@@ -220,11 +220,11 @@ async function uploadUserPhoto(req, res) {
         });
     } catch (error) {
         console.error('Photo upload error:', error);
-        // Provide more descriptive error if it's a configuration issue
-        const message = error.message.includes('Supabase')
-            ? 'Photo storage not configured on server (Missing Supabase credentials)'
-            : 'Internal server error';
-        res.status(500).json({ success: false, message });
+        // Provide the actual error message to the client for debugging
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Internal server error'
+        });
     }
 }
 
