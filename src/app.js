@@ -21,6 +21,9 @@ app.set('views', path.join(__dirname, '../views'));
 
 // Static files
 app.use(express.static(path.join(__dirname, '../public')));
+if (process.env.VERCEL === '1') {
+    app.use('/uploads', express.static('/tmp/uploads'));
+}
 
 // Middleware
 app.use(cors({

@@ -28,21 +28,26 @@ class PhotoService {
                     [oldPhoto.id]
                 );
 
-                // Option: Delete the physical file as per PRD "delete old file when replaced"
-                const oldFilePath = path.join(process.cwd(), oldPhoto.file_path);
+                // Option: Delete the physical file (Resilient to read-only)
+                const isVercel = process.env.VERCEL === '1';
+                const baseDir = isVercel && oldPhoto.file_path.startsWith('/tmp') ? '' : process.cwd();
+                const oldFilePath = path.join(baseDir, oldPhoto.file_path);
+
                 if (fs.existsSync(oldFilePath)) {
                     try {
                         fs.unlinkSync(oldFilePath);
                     } catch (err) {
+                        // On Vercel, unlinking might fail or file might already be gone
                         console.error(`Failed to delete old photo file: ${oldFilePath}`, err);
                     }
                 }
             }
 
             // 3. Insert new photo metadata
-            // Path saved relative to public or project root? PRD says "Path saved in DB"
-            // Let's save relative to the app Root or Public for easier serving
-            const relativePath = path.join('public/uploads/users', file.filename).replace(/\\/g, '/');
+            const isVercel = process.env.VERCEL === '1';
+            const relativePath = isVercel
+                ? `/tmp/uploads/users/${file.filename}`
+                : path.join('public/uploads/users', file.filename).replace(/\\/g, '/');
 
             const insertQuery = `
                 INSERT INTO user_photos (user_id, file_path, file_name, mime_type, file_size, is_active)
