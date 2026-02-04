@@ -50,9 +50,12 @@ app.get('/ping', (req, res) => {
 });
 
 app.get('/ping_json', (req, res) => {
+    const supabase = require('./config/supabase');
     res.json({
         pong: true,
-        time: new Date().toISOString()
+        time: new Date().toISOString(),
+        supabase_configured: !!supabase,
+        db_configured: !!process.env.DATABASE_URL
     });
 });
 
