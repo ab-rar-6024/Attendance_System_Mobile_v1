@@ -24,6 +24,5 @@ const upload = multer({
 });
 
 module.exports = {
-    upload,
-    USER_PHOTOS_DIR
+    upload
 };
