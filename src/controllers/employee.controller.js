@@ -259,11 +259,30 @@ async function getUserPhoto(req, res) {
     }
 }
 
+/**
+ * Delete User Photo
+ */
+async function deleteUserPhoto(req, res) {
+    const targetUserId = req.params.id;
+
+    try {
+        await photoService.deletePhoto(targetUserId);
+        res.json({
+            success: true,
+            message: 'Photo deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete photo error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+}
+
 module.exports = {
     dashboard,
     punchWeb,
     employeeMarkAbsent,
     applyLeave,
     uploadUserPhoto,
-    getUserPhoto
+    getUserPhoto,
+    deleteUserPhoto
 };

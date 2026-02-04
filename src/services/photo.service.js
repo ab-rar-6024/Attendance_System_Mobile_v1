@@ -100,6 +100,50 @@ class PhotoService {
         );
         return result.rows.length > 0 ? result.rows[0] : null;
     }
+
+    /**
+     * Delete user photo
+     */
+    async deletePhoto(userId) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            const existingResult = await client.query(
+                'SELECT id, file_name FROM user_photos WHERE user_id = $1 AND is_active = TRUE',
+                [userId]
+            );
+
+            if (existingResult.rows.length > 0) {
+                const photo = existingResult.rows[0];
+
+                // Mark as inactive in DB
+                await client.query(
+                    'UPDATE user_photos SET is_active = FALSE WHERE id = $1',
+                    [photo.id]
+                );
+
+                // Delete from Supabase Storage
+                if (supabase && photo.file_name) {
+                    try {
+                        await supabase.storage
+                            .from(BUCKET_NAME)
+                            .remove([photo.file_name]);
+                    } catch (err) {
+                        console.error('Failed to delete file from Supabase during explicit delete:', err);
+                    }
+                }
+            }
+
+            await client.query('COMMIT');
+            return true;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = new PhotoService();

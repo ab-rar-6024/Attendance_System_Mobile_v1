@@ -28,5 +28,6 @@ router.post('/punch/biometric', mobileController.punchBiometric);
 // User Photo Operations
 router.post('/mobile/employee/:id/photo', upload.single('photo'), employeeController.uploadUserPhoto);
 router.get('/mobile/employee/:id/photo', employeeController.getUserPhoto);
+router.delete('/mobile/employee/:id/photo', employeeController.deleteUserPhoto);
 
 module.exports = router;
