@@ -205,14 +205,24 @@ async function uploadUserPhoto(req, res) {
 
     try {
         const photo = await photoService.uploadPhoto(targetUserId, req.file);
+
+        // Handle absolute URLs (Supabase) vs relative paths (local)
+        const photoUrl = photo.file_path.startsWith('http')
+            ? photo.file_path
+            : `/${photo.file_path.replace('public/', '')}`;
+
         res.json({
             success: true,
             message: 'Photo uploaded successfully',
-            photoUrl: `/${photo.file_path.replace('public/', '')}`
+            photoUrl: photoUrl
         });
     } catch (error) {
         console.error('Photo upload error:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        // Provide more descriptive error if it's a configuration issue
+        const message = error.message.includes('Supabase')
+            ? error.message
+            : 'Internal server error';
+        res.status(500).json({ success: false, message });
     }
 }
 
@@ -226,8 +236,11 @@ async function getUserPhoto(req, res) {
         const photo = await photoService.getActivePhoto(targetUserId);
 
         if (photo) {
-            // Return the path relative to the root (stripping public/ if needed based on static serve setup)
-            const url = `/${photo.file_path.replace('public/', '')}`;
+            // Handle absolute URLs (Supabase) vs relative paths (local)
+            const url = photo.file_path.startsWith('http')
+                ? photo.file_path
+                : `/${photo.file_path.replace('public/', '')}`;
+
             return res.json({ success: true, photoUrl: url });
         } else {
             // Default avatar
