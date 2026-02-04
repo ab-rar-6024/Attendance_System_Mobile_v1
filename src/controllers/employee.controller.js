@@ -207,9 +207,11 @@ async function uploadUserPhoto(req, res) {
         const photo = await photoService.uploadPhoto(targetUserId, req.file);
 
         // Handle absolute URLs (Supabase) vs relative paths (local)
-        const photoUrl = photo.file_path.startsWith('http')
-            ? photo.file_path
-            : `/${photo.file_path.replace('public/', '')}`;
+        let photoUrl = photo.file_path;
+        if (!photoUrl.startsWith('http')) {
+            photoUrl = photoUrl.replace('public/', '');
+            if (!photoUrl.startsWith('/')) photoUrl = '/' + photoUrl;
+        }
 
         res.json({
             success: true,
@@ -220,7 +222,7 @@ async function uploadUserPhoto(req, res) {
         console.error('Photo upload error:', error);
         // Provide more descriptive error if it's a configuration issue
         const message = error.message.includes('Supabase')
-            ? error.message
+            ? 'Photo storage not configured on server (Missing Supabase credentials)'
             : 'Internal server error';
         res.status(500).json({ success: false, message });
     }
@@ -237,9 +239,11 @@ async function getUserPhoto(req, res) {
 
         if (photo) {
             // Handle absolute URLs (Supabase) vs relative paths (local)
-            const url = photo.file_path.startsWith('http')
-                ? photo.file_path
-                : `/${photo.file_path.replace('public/', '')}`;
+            let url = photo.file_path;
+            if (!url.startsWith('http')) {
+                url = url.replace('public/', '');
+                if (!url.startsWith('/')) url = '/' + url;
+            }
 
             return res.json({ success: true, photoUrl: url });
         } else {
