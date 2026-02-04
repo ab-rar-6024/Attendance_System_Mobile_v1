@@ -17,6 +17,11 @@ class PhotoService {
         try {
             await client.query('BEGIN');
 
+            // 0. Check if Supabase is configured
+            if (!supabase) {
+                throw new Error('Supabase Storage is not configured. Please add SUPABASE_URL and SUPABASE_ANON_KEY to environment variables.');
+            }
+
             // 1. Find existing active photo
             const existingResult = await client.query(
                 'SELECT id, file_path, file_name FROM user_photos WHERE user_id = $1 AND is_active = TRUE',
