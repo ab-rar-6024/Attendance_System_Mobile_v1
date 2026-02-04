@@ -1,9 +1,12 @@
 const pool = require('../config/db');
-const fs = require('fs');
+const supabase = require('../config/supabase');
+const crypto = require('crypto');
 const path = require('path');
 
+const BUCKET_NAME = 'user_photos';
+
 /**
- * Service to handle photo uploads and database operations
+ * Service to handle photo uploads and database operations using Supabase Storage
  */
 class PhotoService {
     /**
@@ -16,11 +19,11 @@ class PhotoService {
 
             // 1. Find existing active photo
             const existingResult = await client.query(
-                'SELECT id, file_path FROM user_photos WHERE user_id = $1 AND is_active = TRUE',
+                'SELECT id, file_path, file_name FROM user_photos WHERE user_id = $1 AND is_active = TRUE',
                 [userId]
             );
 
-            // 2. Mark old photo as inactive
+            // 2. Mark old photo as inactive and delete from Supabase
             if (existingResult.rows.length > 0) {
                 const oldPhoto = existingResult.rows[0];
                 await client.query(
@@ -28,27 +31,37 @@ class PhotoService {
                     [oldPhoto.id]
                 );
 
-                // Option: Delete the physical file (Resilient to read-only)
-                const isVercel = process.env.VERCEL === '1';
-                const baseDir = isVercel && oldPhoto.file_path.startsWith('/tmp') ? '' : process.cwd();
-                const oldFilePath = path.join(baseDir, oldPhoto.file_path);
-
-                if (fs.existsSync(oldFilePath)) {
+                // Delete from Supabase Storage
+                if (oldPhoto.file_name) {
                     try {
-                        fs.unlinkSync(oldFilePath);
+                        await supabase.storage
+                            .from(BUCKET_NAME)
+                            .remove([oldPhoto.file_name]);
                     } catch (err) {
-                        // On Vercel, unlinking might fail or file might already be gone
-                        console.error(`Failed to delete old photo file: ${oldFilePath}`, err);
+                        console.error('Failed to delete old file from Supabase:', err);
                     }
                 }
             }
 
-            // 3. Insert new photo metadata
-            const isVercel = process.env.VERCEL === '1';
-            const relativePath = isVercel
-                ? `/tmp/uploads/users/${file.filename}`
-                : path.join('public/uploads/users', file.filename).replace(/\\/g, '/');
+            // 3. Upload new photo to Supabase Storage
+            const ext = path.extname(file.originalname).toLowerCase();
+            const fileName = `${crypto.randomUUID()}${ext}`;
 
+            const { data, error } = await supabase.storage
+                .from(BUCKET_NAME)
+                .upload(fileName, file.buffer, {
+                    contentType: file.mimetype,
+                    upsert: false
+                });
+
+            if (error) throw error;
+
+            // 4. Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from(BUCKET_NAME)
+                .getPublicUrl(fileName);
+
+            // 5. Insert new photo metadata
             const insertQuery = `
                 INSERT INTO user_photos (user_id, file_path, file_name, mime_type, file_size, is_active)
                 VALUES ($1, $2, $3, $4, $5, TRUE)
@@ -56,8 +69,8 @@ class PhotoService {
             `;
             const result = await client.query(insertQuery, [
                 userId,
-                relativePath,
-                file.filename,
+                publicUrl,
+                fileName,
                 file.mimetype,
                 file.size
             ]);
