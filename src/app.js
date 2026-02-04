@@ -17,10 +17,10 @@ const app = express();
 
 // View engine setup
 app.set('view engine', 'ejs');
-app.set('views', path.join(process.cwd(), 'views'));
+app.set('views', path.join(__dirname, '../views'));
 
 // Static files
-app.use(express.static(path.join(process.cwd(), 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Middleware
 app.use(cors({
