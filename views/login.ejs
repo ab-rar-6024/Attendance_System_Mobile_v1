@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #1d3557, #457b9d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #333;
+    }
+
+    .container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .logo {
+      display: block;
+      margin: 0 auto 1.5rem;
+      height: 64px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input, select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    button {
+      background-color: #1d3557;
+      color: white;
+      border: none;
+      padding: 10px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #16324f;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .tabs button {
+      background: none;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #555;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tabs button.active {
+      color: #1d3557;
+      border-bottom: 2px solid #1d3557;
+    }
+
+    .form-box {
+      display: none;
+    }
+
+    .form-box.active {
+      display: block;
+    }
+
+    .pin-inputs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    .pin-inputs input {
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s ease-in-out;
+    }
+
+    .btn-green {
+      background-color: #28a745;
+      color: white;
+      margin-right: 20px;
+    }
+
+    .btn-red {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo"/>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-target="admin">Admin</button>
+      <button class="tab-btn" data-target="employee">Employee</button>
+      <!--button class="tab-btn" data-target="punch">Punch</button-->
+    </div>
+
+    <div id="admin" class="form-box active">
+      <h2>Admin Login</h2>
+      <form method="POST" action="/login">
+        <input type="hidden" name="role" value="admin">
+        <input type="text" name="username" placeholder="Username" required/>
+        <input type="password" name="password" placeholder="Password" required/>
+        <button type="submit">Login as Admin</button>
+      </form>
+    </div>
+
+    <div id="employee" class="form-box">
+      <h2>Employee Login</h2>
+      <form method="POST" action="/login">
+        <input type="hidden" name="role" value="employee">
+        <input type="text" name="username" placeholder="Employee Code" required/>
+        <input type="password" name="password" placeholder="Password" required/>
+        <button type="submit">Login as Employee</button>
+      </form>
+    </div>
+
+    <div id="punch" class="form-box">
+      <h2>Employee Punch</h2>
+      <div class="pin-inputs">
+        <input type="password" maxlength="1">
+        <input type="password" maxlength="1">
+        <input type="password" maxlength="1">
+        <input type="password" maxlength="1">
+      </div>
+      <div>
+        <button class="btn btn-green" onclick="punch('in')">PUNCH IN</button>
+        <button class="btn btn-red" onclick="punch('out')">PUNCH OUT</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const forms = document.querySelectorAll('.form-box');
+    
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabs.forEach(b => b.classList.remove('active'));
+        forms.forEach(f => f.classList.remove('active'));
+        
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.target).classList.add('active');
+      });
+    });
+
+    function getPin() {
+      const digits = document.querySelectorAll('.pin-inputs input');
+      return Array.from(digits).map(d => d.value).join('');
+    }
+
+    async function punch(type) {
+      const pin = getPin();
+      if (pin.length !== 4) {
+        alert("Enter 4-digit PIN.");
+        return;
+      }
+
+      const res = await fetch("/punch", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `pin=${pin}&type=${type}`
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`Punched ${type.toUpperCase()} successfully!`);
+      } else {
+        alert("Invalid PIN or punch failed.");
+      }
+    }
+
+    // Auto-move to next input
+    document.querySelectorAll('.pin-inputs input').forEach((input, i, arr) => {
+      input.addEventListener('input', () => {
+        if (input.value && i < arr.length - 1) {
+          arr[i + 1].focus();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

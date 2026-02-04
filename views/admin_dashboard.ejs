@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: #111827;
+            color: #fff
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #1f2937;
+            min-height: 100vh;
+            padding: 1.5rem
+        }
+
+        .sidebar a {
+            color: #fff;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 1rem
+        }
+
+        .sidebar a:hover {
+            text-decoration: underline
+        }
+
+        .content {
+            padding: 2rem;
+            flex: 1
+        }
+
+        .card {
+            background: #1e293b;
+            border: none;
+            border-radius: 12px;
+            color: #fff
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            border: none
+        }
+
+        .btn-warning {
+            background: #facc15;
+            border: none;
+            color: #000
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            border: none
+        }
+
+        .table-dark th,
+        .table-dark td {
+            background: #1e293b !important;
+            color: #fff
+        }
+
+        .alert {
+            border-radius: 10px
+        }
+
+        section {
+            display: none
+        }
+
+        section.active {
+            display: block
+        }
+
+        .location-link {
+            color: #60a5fa !important;
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .location-link:hover {
+            color: #93c5fd !important;
+            text-decoration: underline;
+        }
+
+        .location-icon {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        .location-cell {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="d-flex">
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h4>Admin Dashboard</h4>
+            <a href="#dash" class="nav-link" data-target="dash">🏠 Dashboard</a>
+            <a href="#add" class="nav-link" data-target="add">➕ Add Employee</a>
+            <a href="#search" class="nav-link" data-target="search">🔍 Search</a>
+            <a href="/reports">📊 Reports</a>
+            <a href="/monthly_report">📅 Monthly Report</a>
+            <a href="/logout">🚪 Logout</a>
+        </div>
+
+        <!-- Main content -->
+        <div class="content container-fluid">
+
+            <% if (typeof messages !=='undefined' && messages) { %>
+                <% Object.keys(messages).forEach(category=> { %>
+                    <% messages[category].forEach(msg=> { %>
+                        <div class="alert alert-<%= category %> alert-dismissible fade show" role="alert">
+                            <%= msg %>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <% }); %>
+                            <% }); %>
+                                <% } %>
+
+                                    <!-- DASHBOARD PANEL -->
+                                    <section id="dash" class="active">
+
+                                        <div class="card p-4 mb-4">
+                                            <h5>Total Punch-ins (Last 7 Days)</h5>
+                                            <canvas id="punchChart" height="100"></canvas>
+                                        </div>
+
+                                        <!-- TODAY'S ATTENDANCE -->
+                                        <h5>Today's Punch Status</h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-dark table-striped table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Name</th>
+                                                        <th>Code</th>
+                                                        <th>PIN</th>
+                                                        <th>In Time</th>
+                                                        <th>📍 In Location</th>
+                                                        <th>Out Time</th>
+                                                        <th>📍 Out Location</th>
+                                                        <th>Absent</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+
+                                                    <% attendance.forEach((r, index)=> { %>
+                                                        <tr>
+                                                            <td>
+                                                                <%= index + 1 %>
+                                                            </td>
+                                                            <td>
+                                                                <%= r.name %>
+                                                            </td>
+                                                            <td>
+                                                                <%= r.emp_code %>
+                                                            </td>
+                                                            <td>
+                                                                <%= r.pin || 'None' %>
+                                                            </td>
+
+                                                            <!-- Punch IN Time -->
+                                                            <td>
+                                                                <%= r.time_in || '—' %>
+                                                            </td>
+
+                                                            <!-- Punch IN Location -->
+                                                            <td class="location-cell">
+                                                                <% if (r.location_in && r.location_in !=='—' ) { %>
+                                                                    <% const locParts=r.location_in.split('|'); %>
+                                                                        <% if (locParts.length===3) { %>
+                                                                            <a href="https://www.google.com/maps?q=<%= locParts[1] %>,<%= locParts[2] %>"
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                class="location-link"
+                                                                                onclick="event.stopPropagation();"
+                                                                                title="Click to view on Google Maps: <%= locParts[0] %>">
+                                                                                <svg class="location-icon"
+                                                                                    viewBox="0 0 20 20">
+                                                                                    <path fill-rule="evenodd"
+                                                                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                                                                                        clip-rule="evenodd" />
+                                                                                </svg>
+                                                                                <%= locParts[0].substring(0, 25) %>
+                                                                                    <% if (locParts[0].length> 25) {
+                                                                                        %>...<% } %>
+                                                                            </a>
+                                                                            <% } else { %>
+                                                                                <span class="text-muted"
+                                                                                    title="<%= r.location_in %>">
+                                                                                    <%= r.location_in.substring(0, 25)
+                                                                                        %>
+                                                                                        <% if (r.location_in.length> 25)
+                                                                                            { %>...<% } %>
+                                                                                </span>
+                                                                                <% } %>
+                                                                                    <% } else { %>
+                                                                                        <span
+                                                                                            class="text-muted">—</span>
+                                                                                        <% } %>
+                                                            </td>
+
+                                                            <!-- Punch OUT Time -->
+                                                            <td>
+                                                                <%= r.time_out || '—' %>
+                                                            </td>
+
+                                                            <!-- Punch OUT Location -->
+                                                            <td class="location-cell">
+                                                                <% if (r.location_out && r.location_out !=='—' ) { %>
+                                                                    <% const locParts=r.location_out.split('|'); %>
+                                                                        <% if (locParts.length===3) { %>
+                                                                            <a href="https://www.google.com/maps?q=<%= locParts[1] %>,<%= locParts[2] %>"
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                class="location-link"
+                                                                                onclick="event.stopPropagation();"
+                                                                                title="Click to view on Google Maps: <%= locParts[0] %>">
+                                                                                <svg class="location-icon"
+                                                                                    viewBox="0 0 20 20">
+                                                                                    <path fill-rule="evenodd"
+                                                                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                                                                                        clip-rule="evenodd" />
+                                                                                </svg>
+                                                                                <%= locParts[0].substring(0, 25) %>
+                                                                                    <% if (locParts[0].length> 25) {
+                                                                                        %>...<% } %>
+                                                                            </a>
+                                                                            <% } else { %>
+                                                                                <span class="text-muted"
+                                                                                    title="<%= r.location_out %>">
+                                                                                    <%= r.location_out.substring(0, 25)
+                                                                                        %>
+                                                                                        <% if (r.location_out.length>
+                                                                                            25) { %>...<% } %>
+                                                                                </span>
+                                                                                <% } %>
+                                                                                    <% } else { %>
+                                                                                        <span
+                                                                                            class="text-muted">—</span>
+                                                                                        <% } %>
+                                                            </td>
+
+                                                            <!-- Absent Reason -->
+                                                            <td>
+                                                                <% if (r.absent) { %>
+                                                                    <span class="badge bg-danger">Absent</span><br>
+                                                                    <small class="text-muted">
+                                                                        <%= r.reason || '' %>
+                                                                    </small>
+                                                                    <% } else { %>
+                                                                        <span class="badge bg-success">Present</span>
+                                                                        <% } %>
+                                                            </td>
+
+                                                            <!-- Actions -->
+                                                            <td>
+                                                                <div class="d-flex gap-1 flex-wrap">
+                                                                    <% if (!r.absent) { %>
+                                                                        <form method="POST"
+                                                                            action="/admin/absent/<%= r.id %>"
+                                                                            class="d-inline">
+                                                                            <input name="reason"
+                                                                                class="form-control form-control-sm mb-1"
+                                                                                placeholder="Reason"
+                                                                                style="width:100px">
+                                                                            <button
+                                                                                class="btn btn-warning btn-sm">Absent</button>
+                                                                        </form>
+                                                                        <% } %>
+
+                                                                            <form method="POST"
+                                                                                action="/delete_employee/<%= r.id %>"
+                                                                                onsubmit="return confirm('Delete <%= r.name %>?')"
+                                                                                class="d-inline">
+                                                                                <button class="btn btn-danger btn-sm"
+                                                                                    type="submit">🗑</button>
+                                                                            </form>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <% }); %>
+
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <hr class="my-4">
+
+                                        <!-- LEAVE REQUESTS -->
+                                        <h5 class="mt-4">Recent Leave Requests </h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-dark table-striped table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Employee</th>
+                                                        <th>From Date</th>
+                                                        <th>To Date</th>
+                                                        <th>Days</th>
+                                                        <th>Reason</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <% if (typeof leave_requests !=='undefined' &&
+                                                        leave_requests.length> 0) { %>
+                                                        <% leave_requests.forEach((l, index)=> { %>
+                                                            <tr>
+                                                                <td>
+                                                                    <%= index + 1 %>
+                                                                </td>
+                                                                <td>
+                                                                    <%= l.name %>
+                                                                </td>
+                                                                <td>
+                                                                    <%= new
+                                                                        Date(l.from_date).toISOString().split('T')[0] %>
+                                                                </td>
+                                                                <td>
+                                                                    <%= new Date(l.to_date).toISOString().split('T')[0]
+                                                                        %>
+                                                                </td>
+                                                                <td>
+                                                                    <% const days=Math.floor((new Date(l.to_date) - new
+                                                                        Date(l.from_date)) / (1000 * 60 * 60 * 24)) + 1;
+                                                                        %>
+                                                                        <span class="badge bg-info">
+                                                                            <%= days %> day(s)
+                                                                        </span>
+                                                                </td>
+                                                                <td class="text-warning">
+                                                                    <%= l.reason %>
+                                                                </td>
+                                                            </tr>
+                                                            <% }); %>
+                                                                <% } else { %>
+                                                                    <tr>
+                                                                        <td colspan="6" class="text-center text-muted">
+                                                                            No leave requests</td>
+                                                                    </tr>
+                                                                    <% } %>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                    </section>
+
+                                    <!-- ADD EMPLOYEE -->
+                                    <section id="add">
+                                        <div class="card p-4">
+                                            <h5>Add New Employee</h5>
+                                            <form action="/add_employee" method="post" class="row g-3 mt-2">
+                                                <div class="col-md-4">
+                                                    <input name="name" class="form-control" placeholder="Full Name"
+                                                        required>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input name="emp_code" class="form-control"
+                                                        placeholder="Employee Code" required>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input name="password" type="password" class="form-control"
+                                                        placeholder="Password" required>
+                                                </div>
+                                                <div class="col-12 text-end">
+                                                    <button class="btn btn-primary" type="submit">Add Employee</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </section>
+
+                                    <!-- SEARCH EMPLOYEES -->
+                                    <section id="search" <% if (query) { %>class="active"<% } %>>
+                                            <div class="card p-4">
+                                                <h5>Search Employees</h5>
+                                                <form action="/search" method="get" class="d-flex gap-2 mt-2">
+                                                    <input name="query" class="form-control"
+                                                        placeholder="Search by Name or Code" value="<%= query || '' %>"
+                                                        required>
+                                                    <button class="btn btn-primary" type="submit">Search</button>
+                                                </form>
+
+                                                <% if (typeof employees !=='undefined' && employees.length> 0) { %>
+                                                    <hr>
+                                                    <table class="table table-dark table-bordered mt-3">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>#</th>
+                                                                <th>Name</th>
+                                                                <th>Code</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <% employees.forEach((e, index)=> { %>
+                                                                <tr>
+                                                                    <td>
+                                                                        <%= index + 1 %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= e.name %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= e.emp_code %>
+                                                                    </td>
+                                                                </tr>
+                                                                <% }); %>
+                                                        </tbody>
+                                                    </table>
+                                                    <% } %>
+                                            </div>
+                                    </section>
+
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script>
+        new Chart(document.getElementById('punchChart'), {
+            type: 'bar',
+            data: {
+                labels: <% - JSON.stringify(typeof labels !== 'undefined' ? labels : []) %>,
+                datasets: [{
+                    data: <% - JSON.stringify(typeof counts !== 'undefined' ? counts : []) %>,
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#fff' },
+                        grid: { color: '#374151' }
+                    },
+                    x: {
+                        ticks: { color: '#fff' },
+                        grid: { color: '#374151' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    </script>
+
+    <!-- Navigation -->
+    <script>
+        // Handle initial section visibility
+        window.addEventListener('DOMContentLoaded', function () {
+  // If search query exists, keep search section active
+  <% if (query) { %>
+                document.querySelectorAll('section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById('search').classList.add('active');
+  <% } %>
+});
+
+        document.querySelectorAll('.sidebar a[data-target]').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.dataset.target;
+
+                // Hide all sections
+                document.querySelectorAll('section').forEach(section => {
+                    section.classList.remove('active');
+                });
+
+                // Show target section
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

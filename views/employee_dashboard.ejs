@@ -1,0 +1,180 @@
+<!-- templates/employee_dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #111827;
+            color: #fff;
+        }
+
+        .container-main {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #1f2937;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content {
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .card {
+            background-color: #1e293b;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            border: none;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            border: none;
+        }
+
+        .alert {
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container-main">
+        <div class="sidebar">
+            <h4>Employee</h4>
+            <a href="/logout" class="btn btn-outline-light mt-3">Logout</a>
+        </div>
+
+        <div class="content">
+            <% if (typeof messages !=='undefined' && messages) { %>
+                <% Object.keys(messages).forEach(category=> { %>
+                    <% messages[category].forEach(msg=> { %>
+                        <div class="alert alert-<%= category %> alert-dismissible fade show" role="alert">
+                            <%= msg %>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                    aria-label="Close"></button>
+                        </div>
+                        <% }); %>
+                            <% }); %>
+                                <% } %>
+
+                                    <h3 class="mb-4">👋 Welcome, <%= name %>
+                                    </h3>
+
+                                    <div class="row mb-4">
+                                        <div class="col-md-6">
+                                            <div class="card p-3 mb-3">
+                                                <h5>Punch Clock</h5>
+                                                <form action="/punch" method="POST" style="display:inline;">
+                                                    <input type="hidden" name="type" value="in">
+                                                    <button class="btn btn-primary">Punch In</button>
+                                                </form>
+                                                <form action="/punch" method="POST" style="display:inline;">
+                                                    <input type="hidden" name="type" value="out">
+                                                    <button class="btn btn-primary">Punch Out</button>
+                                                </form>
+
+                                                <form action="/absent" method="POST" class="mt-3">
+                                                    <input type="text" name="reason" placeholder="Reason (optional)"
+                                                        class="form-control mb-2">
+                                                    <button type="submit" class="btn btn-danger w-100">Mark
+                                                        Absent</button>
+                                                </form>
+
+                                                <p class="mt-3">🕒 <strong>Time:</strong> <span id="clock"></span></p>
+                                                <% if (time_in) { %>
+                                                    <p><strong>Today:</strong> In at <%= time_in %>
+                                                    </p>
+                                                    <% } %>
+                                                        <% if (time_out) { %>
+                                                            <p><strong>Out at:</strong>
+                                                                <%= time_out %>
+                                                            </p>
+                                                            <% } %>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="card p-3">
+                                                <h5>Weekly Punch-Ins</h5>
+                                                <canvas id="punchChart" height="250"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+        </div>
+    </div>
+
+    <script>
+        // Live clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById("clock").textContent = now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Chart
+        const ctx = document.getElementById('punchChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: <% - JSON.stringify(p_labels) %>,
+                datasets: [{
+                    label: 'Punch-ins',
+                    data: <% - JSON.stringify(p_counts) %>,
+                    backgroundColor: '#3b82f6'
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#fff'
+                        },
+                        grid: {
+                            color: '#334155'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#fff'
+                        },
+                        grid: {
+                            color: '#334155'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#fff'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
