@@ -1,5 +1,4 @@
 const { Pool } = require('pg');
-require('dotenv').config();
 
 if (!process.env.DATABASE_URL) {
   console.error('❌ CRITICAL: DATABASE_URL is missing!');
@@ -7,17 +6,14 @@ if (!process.env.DATABASE_URL) {
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
-// Test connection
-pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
-});
-
-pool.on('error', (err) => {
-  console.error('❌ Unexpected error on idle client:', err.message);
-  // Do not exit on Vercel
-});
+// Test connection (only once)
+pool.query('SELECT NOW()')
+  .then(() => console.log('✅ PostgreSQL Connected Successfully'))
+  .catch(err => console.error('❌ DB Connection Failed:', err.message));
 
 module.exports = pool;
