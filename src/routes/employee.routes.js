@@ -9,7 +9,7 @@ const { upload } = require('../middleware/upload');
 router.get('/employee', protect('emp_id'), employeeController.dashboard);
 
 // Punch in/out (web form)
-router.post('/punch', protect('emp_id'), employeeController.punchWeb);
+router.post('/employee/punch', protect('emp_id'), employeeController.punchWeb);
 
 // Mark absent
 router.post('/absent', protect('emp_id'), employeeController.employeeMarkAbsent);

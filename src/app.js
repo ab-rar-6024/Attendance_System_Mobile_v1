@@ -64,6 +64,12 @@ app.get('/ping_json', (req, res) => {
     });
 });
 
+app.post('/debug_punch', (req, res) => {
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
+    res.json({ received: req.body, content_type: req.headers['content-type'] });
+});
+
 // Routes
 app.use('/', authRoutes);
 app.use('/', adminRoutes);

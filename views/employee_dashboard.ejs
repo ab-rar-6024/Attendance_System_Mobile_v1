@@ -1,180 +1,918 @@
-<!-- templates/employee_dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <title>Employee Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Attendify — Employee Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
     <style>
-        body {
-            background-color: #111827;
-            color: #fff;
+        :root {
+            --bg:      #0b0f1a;
+            --surface: #111827;
+            --card:    #161d2e;
+            --hover:   #1c2540;
+            --border:  #1e2d45;
+            --gold:    #c9a84c;
+            --gold-s:  rgba(201,168,76,0.12);
+            --gold-g:  rgba(201,168,76,0.28);
+            --txt:     #e8eaf0;
+            --muted:   #6b7a99;
+            --dim:     #3d4f6e;
+            --green:   #22c55e;
+            --red:     #ef4444;
+            --blue:    #3b7ef8;
         }
 
-        .container-main {
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            font-family: 'DM Sans', sans-serif;
+            color: var(--txt);
+            min-height: 100vh;
             display: flex;
+        }
+
+        /* ══════════════════════════════════════════
+           SIDEBAR
+        ══════════════════════════════════════════ */
+        .sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 50;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-logo {
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid var(--gold-g);
+            padding: 3px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0;
+        }
+
+        .sidebar-logo img { width: 100%; height: 100%; object-fit: contain; }
+
+        .sidebar-brand {
+            font-family: 'Playfair Display', serif;
+            font-size: 16px; font-weight: 800;
+            color: var(--txt); line-height: 1;
+        }
+
+        .sidebar-brand span { display: block; font-size: 10px; font-weight: 500; color: var(--muted); font-family: 'DM Sans', sans-serif; margin-top: 2px; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* Employee info pill */
+        .sidebar-user {
+            margin: 16px 12px;
+            background: var(--gold-s);
+            border: 1px solid var(--gold-g);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+
+        .sidebar-user .emp-name {
+            font-size: 13px; font-weight: 600; color: var(--txt);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .sidebar-user .emp-code {
+            font-size: 11px; color: var(--gold);
+            margin-top: 3px; letter-spacing: 1px;
+        }
+
+        /* Nav */
+        .sidebar-nav {
+            flex: 1;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-section-label {
+            font-size: 9.5px; font-weight: 600;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: var(--dim); padding: 12px 8px 6px;
+        }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 8px;
+            font-size: 13px; font-weight: 500; color: var(--muted);
+            text-decoration: none; cursor: pointer;
+            transition: all 0.2s; border: none; background: none;
+            width: 100%; text-align: left;
+        }
+
+        .nav-item:hover { background: var(--hover); color: var(--txt); }
+        .nav-item.active { background: var(--gold-s); color: var(--gold); border: 1px solid var(--gold-g); }
+
+        .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-logout {
+            width: 100%;
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 8px;
+            font-size: 13px; font-weight: 600;
+            color: var(--red); text-decoration: none;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.2);
+            transition: all 0.2s; cursor: pointer;
+        }
+
+        .btn-logout:hover { background: rgba(239,68,68,0.15); }
+
+        /* ══════════════════════════════════════════
+           MAIN CONTENT
+        ══════════════════════════════════════════ */
+        .main {
+            flex: 1;
+            margin-left: 240px;
+            display: flex;
+            flex-direction: column;
             min-height: 100vh;
         }
 
-        .sidebar {
-            width: 250px;
-            background-color: #1f2937;
-            padding: 1.5rem;
+        /* Topbar */
+        .topbar {
+            height: 64px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            position: sticky; top: 0; z-index: 40;
         }
 
-        .content {
+        .topbar-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px; font-weight: 700; color: var(--txt);
+        }
+
+        .topbar-right { display: flex; align-items: center; gap: 14px; }
+
+        .date-badge {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px; font-weight: 500; color: var(--muted);
+        }
+
+        .clock-badge {
+            background: var(--gold-s);
+            border: 1px solid var(--gold-g);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 13px; font-weight: 700; color: var(--gold);
+            font-variant-numeric: tabular-nums;
+            min-width: 90px; text-align: center;
+        }
+
+        /* Hamburger */
+        .hamburger {
+            display: none;
+            background: none; border: none;
+            color: var(--txt); font-size: 22px; cursor: pointer;
+        }
+
+        /* Page content */
+        .page-content {
+            padding: 28px;
             flex: 1;
-            padding: 2rem;
         }
 
-        .card {
-            background-color: #1e293b;
-            color: #fff;
-            border: none;
+        /* Flash messages */
+        .flash-box { margin-bottom: 20px; }
+
+        .flash-msg {
+            padding: 12px 16px;
+            border-radius: 9px;
+            font-size: 13.5px;
+            margin-bottom: 8px;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .flash-msg.danger  { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.25);  color: #ef4444; }
+        .flash-msg.success { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.25);  color: #22c55e; }
+        .flash-msg.warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); color: #f59e0b; }
+        .flash-msg.info    { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); color: #3b82f6; }
+
+        /* Welcome banner */
+        .welcome-banner {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--gold);
             border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
         }
 
-        .btn-primary {
-            background-color: #3b82f6;
-            border: none;
+        .welcome-text h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px; font-weight: 700; color: var(--txt);
         }
 
-        .btn-danger {
-            background-color: #ef4444;
-            border: none;
+        .welcome-text p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+        .status-pill {
+            padding: 6px 14px; border-radius: 100px;
+            font-size: 12px; font-weight: 600;
         }
 
-        .alert {
+        .status-pill.in    { background: rgba(34,197,94,0.15);  color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+        .status-pill.out   { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+        .status-pill.none  { background: var(--gold-s);          color: var(--gold); border: 1px solid var(--gold-g); }
+
+        /* Section title */
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 16px; font-weight: 700; color: var(--txt);
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1; height: 1px;
+            background: var(--border);
+        }
+
+        /* ── GRID ─────────────────────────────────── */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px 22px;
+        }
+
+        .card-title {
+            font-size: 11px; font-weight: 600;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 12px;
+        }
+
+        /* Stat cards */
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px 20px;
+            border-top: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .stat-card.gold  { border-top-color: var(--gold); }
+        .stat-card.green { border-top-color: var(--green); }
+        .stat-card.red   { border-top-color: var(--red); }
+
+        .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+        .stat-value { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 800; color: var(--txt); line-height: 1; }
+        .stat-sub   { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+        /* Punch card */
+        .punch-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+
+        .punch-card h3 { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--txt); margin-bottom: 6px; }
+        .punch-card p  { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+        .punch-times {
+            display: flex; gap: 12px; margin-bottom: 20px;
+        }
+
+        .time-box {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 10px;
-            margin-bottom: 1rem;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .time-box .t-label { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+        .time-box .t-val   { font-size: 15px; font-weight: 700; color: var(--txt); }
+        .time-box .t-val.green { color: var(--green); }
+        .time-box .t-val.red   { color: var(--red); }
+        .time-box .t-val.muted { color: var(--dim); }
+
+        .punch-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+
+        .btn-punch-in, .btn-punch-out {
+            padding: 12px; border: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13.5px; font-weight: 700;
+            border-radius: 9px; cursor: pointer;
+            transition: all 0.2s; letter-spacing: 0.3px;
+        }
+
+        .btn-punch-in  { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+        .btn-punch-in:hover  { background: rgba(34,197,94,0.25); transform: translateY(-1px); }
+        .btn-punch-out { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
+        .btn-punch-out:hover { background: rgba(239,68,68,0.2); transform: translateY(-1px); }
+
+        /* Absent form */
+        .absent-divider { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; }
+        .absent-divider span { flex: 1; height: 1px; background: var(--border); }
+        .absent-divider p { font-size: 11px; color: var(--dim); white-space: nowrap; }
+
+        .absent-form { display: flex; gap: 8px; }
+
+        .absent-input {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--txt);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px; padding: 10px 13px;
+            border-radius: 8px; outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .absent-input:focus { border-color: var(--gold); }
+        .absent-input::placeholder { color: var(--dim); }
+
+        .btn-absent {
+            padding: 10px 16px; border: none;
+            background: rgba(239,68,68,0.12); color: var(--red);
+            border: 1px solid rgba(239,68,68,0.25);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12.5px; font-weight: 700;
+            border-radius: 8px; cursor: pointer;
+            transition: all 0.2s; white-space: nowrap;
+        }
+
+        .btn-absent:hover { background: rgba(239,68,68,0.2); }
+
+        /* Leave request */
+        .leave-form { display: flex; flex-direction: column; gap: 12px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .field-group { display: flex; flex-direction: column; gap: 6px; }
+
+        .field-label {
+            font-size: 10.5px; font-weight: 600;
+            letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
+        }
+
+        .field-input, .field-select, .field-textarea {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--txt);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px; padding: 10px 12px;
+            border-radius: 8px; outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .field-input:focus, .field-select:focus, .field-textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-s); }
+        .field-select option { background: var(--card); }
+        .field-textarea { resize: none; }
+
+        .btn-submit-leave {
+            background: var(--gold); color: #0b0f1a;
+            border: none; padding: 11px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13.5px; font-weight: 700;
+            border-radius: 8px; cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-submit-leave:hover { background: #d4b05a; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(201,168,76,0.3); }
+
+        /* Chart wrapper */
+        .chart-wrap { position: relative; height: 220px; }
+
+        /* Table */
+        .table-wrap { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+        thead th {
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 10px; font-weight: 600;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        tbody tr { border-bottom: 1px solid rgba(30,45,69,0.5); transition: background 0.15s; }
+        tbody tr:hover { background: var(--hover); }
+        tbody tr:last-child { border-bottom: none; }
+
+        tbody td { padding: 12px 14px; color: var(--txt); vertical-align: middle; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px; border-radius: 100px;
+            font-size: 11px; font-weight: 600;
+        }
+
+        .badge-present { background: rgba(34,197,94,0.15);  color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+        .badge-absent  { background: rgba(239,68,68,0.12);  color: var(--red);   border: 1px solid rgba(239,68,68,0.2); }
+        .badge-leave   { background: rgba(201,168,76,0.12); color: var(--gold);  border: 1px solid var(--gold-g); }
+        .badge-pending { background: rgba(245,158,11,0.1);  color: #f59e0b;      border: 1px solid rgba(245,158,11,0.2); }
+
+        .loc-link { color: var(--blue); text-decoration: none; font-size: 12px; }
+        .loc-link:hover { text-decoration: underline; }
+
+        /* ── MOBILE ───────────────────────────────── */
+        .overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 49;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .overlay.open { display: block; }
+            .main { margin-left: 0; }
+            .hamburger { display: block; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            .grid-3 { grid-template-columns: 1fr; }
+            .punch-btns { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .page-content { padding: 16px; }
         }
     </style>
 </head>
-
 <body>
 
-    <div class="container-main">
-        <div class="sidebar">
-            <h4>Employee</h4>
-            <a href="/logout" class="btn btn-outline-light mt-3">Logout</a>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- ══ SIDEBAR ══════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <img src="/images/logo.png" alt="Attendify">
         </div>
-
-        <div class="content">
-            <% if (typeof messages !=='undefined' && messages) { %>
-                <% Object.keys(messages).forEach(category=> { %>
-                    <% messages[category].forEach(msg=> { %>
-                        <div class="alert alert-<%= category %> alert-dismissible fade show" role="alert">
-                            <%= msg %>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                    aria-label="Close"></button>
-                        </div>
-                        <% }); %>
-                            <% }); %>
-                                <% } %>
-
-                                    <h3 class="mb-4">👋 Welcome, <%= name %>
-                                    </h3>
-
-                                    <div class="row mb-4">
-                                        <div class="col-md-6">
-                                            <div class="card p-3 mb-3">
-                                                <h5>Punch Clock</h5>
-                                                <form action="/punch" method="POST" style="display:inline;">
-                                                    <input type="hidden" name="type" value="in">
-                                                    <button class="btn btn-primary">Punch In</button>
-                                                </form>
-                                                <form action="/punch" method="POST" style="display:inline;">
-                                                    <input type="hidden" name="type" value="out">
-                                                    <button class="btn btn-primary">Punch Out</button>
-                                                </form>
-
-                                                <form action="/absent" method="POST" class="mt-3">
-                                                    <input type="text" name="reason" placeholder="Reason (optional)"
-                                                        class="form-control mb-2">
-                                                    <button type="submit" class="btn btn-danger w-100">Mark
-                                                        Absent</button>
-                                                </form>
-
-                                                <p class="mt-3">🕒 <strong>Time:</strong> <span id="clock"></span></p>
-                                                <% if (time_in) { %>
-                                                    <p><strong>Today:</strong> In at <%= time_in %>
-                                                    </p>
-                                                    <% } %>
-                                                        <% if (time_out) { %>
-                                                            <p><strong>Out at:</strong>
-                                                                <%= time_out %>
-                                                            </p>
-                                                            <% } %>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6">
-                                            <div class="card p-3">
-                                                <h5>Weekly Punch-Ins</h5>
-                                                <canvas id="punchChart" height="250"></canvas>
-                                            </div>
-                                        </div>
-                                    </div>
+        <div class="sidebar-brand">
+            ATTENDIFY
+            <span>Employee Portal</span>
         </div>
     </div>
 
-    <script>
-        // Live clock
-        function updateClock() {
-            const now = new Date();
-            document.getElementById("clock").textContent = now.toLocaleTimeString();
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+    <!-- Employee info -->
+    <div class="sidebar-user">
+        <div class="emp-name">👤 <%= name %></div>
+        <div class="emp-code">Employee Portal</div>
+    </div>
 
-        // Chart
-        const ctx = document.getElementById('punchChart').getContext('2d');
-        const chart = new Chart(ctx, {
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Navigation</div>
+
+        <button class="nav-item active" onclick="showSection('dashboard')">
+            <span class="icon">📊</span> Dashboard
+        </button>
+        <button class="nav-item" onclick="showSection('attendance')">
+            <span class="icon">📋</span> My Attendance
+        </button>
+        <button class="nav-item" onclick="showSection('leave')">
+            <span class="icon">🏖️</span> Apply Leave
+        </button>
+    </nav>
+
+    <div class="sidebar-footer">
+        <a href="/logout" class="btn-logout">
+            <span>🚪</span> Logout
+        </a>
+    </div>
+</aside>
+
+<!-- ══ MAIN ══════════════════════════════════════════ -->
+<div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <button class="hamburger" onclick="openSidebar()">☰</button>
+            <span class="topbar-title" id="topbarTitle">Dashboard</span>
+        </div>
+        <div class="topbar-right">
+            <span class="date-badge" id="dateBadge"></span>
+            <span class="clock-badge" id="liveClock">--:--:--</span>
+        </div>
+    </div>
+
+    <!-- Page content -->
+    <div class="page-content">
+
+        <!-- Flash messages -->
+        <% if (typeof messages !== 'undefined' && messages) { %>
+        <div class="flash-box">
+            <% Object.keys(messages).forEach(function(category) { %>
+                <% messages[category].forEach(function(msg) { %>
+                <div class="flash-msg <%= category %>">
+                    <%= category === 'danger' ? '⚠️' : category === 'success' ? '✅' : 'ℹ️' %>
+                    <%= msg %>
+                </div>
+                <% }); %>
+            <% }); %>
+        </div>
+        <% } %>
+
+        <!-- ══ DASHBOARD SECTION ══════════════════ -->
+        <div id="section-dashboard">
+
+            <!-- Welcome banner -->
+            <div class="welcome-banner">
+                <div class="welcome-text">
+                    <h2>👋 Welcome back, <%= name %></h2>
+                    <p>Here's your attendance overview for today.</p>
+                </div>
+                <% if (time_in && !time_out) { %>
+                    <span class="status-pill in">● Punched In</span>
+                <% } else if (time_in && time_out) { %>
+                    <span class="status-pill out">● Shift Complete</span>
+                <% } else { %>
+                    <span class="status-pill none">● Not Punched In</span>
+                <% } %>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="grid-3">
+                <div class="stat-card gold">
+                    <div class="stat-label">Today In</div>
+                    <div class="stat-value"><%= time_in || '—' %></div>
+                    <div class="stat-sub">Punch-in time</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-label">Today Out</div>
+                    <div class="stat-value"><%= time_out || '—' %></div>
+                    <div class="stat-sub">Punch-out time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Status</div>
+                    <div class="stat-value" style="font-size:20px;">
+                        <% if (time_in && !time_out) { %>
+                            <span style="color:var(--green)">Active</span>
+                        <% } else if (time_in && time_out) { %>
+                            <span style="color:var(--muted)">Done</span>
+                        <% } else { %>
+                            <span style="color:var(--gold)">Pending</span>
+                        <% } %>
+                    </div>
+                    <div class="stat-sub">Today's shift</div>
+                </div>
+            </div>
+
+            <!-- Punch + Chart -->
+            <div class="grid-2">
+
+                <!-- Punch clock card -->
+                <div class="punch-card">
+                    <h3>⏱ Punch Clock</h3>
+                    <p>Record your attendance for today</p>
+
+                    <!-- Today's times -->
+                    <div class="punch-times">
+                        <div class="time-box">
+                            <div class="t-label">Punch In</div>
+                            <div class="t-val green"><%= time_in || '—' %></div>
+                        </div>
+                        <div class="time-box">
+                            <div class="t-label">Punch Out</div>
+                            <div class="t-val red"><%= time_out || '—' %></div>
+                        </div>
+                    </div>
+
+                    <!-- Punch buttons -->
+                    <div class="punch-btns">
+                        <form action="/employee/punch" method="POST">
+    <input type="hidden" name="type" value="in">
+    <button type="submit" class="btn-punch-in" style="width:100%;">↑ &nbsp;Punch In</button>
+</form>
+                        <form action="/employee/punch" method="POST">
+    <input type="hidden" name="type" value="out">
+    <button type="submit" class="btn-punch-out" style="width:100%;">↓ &nbsp;Punch Out</button>
+</form>
+                    </div>
+
+                    <!-- Mark absent -->
+                    <div class="absent-divider">
+                        <span></span><p>or mark absent</p><span></span>
+                    </div>
+                    <form action="/absent" method="POST" class="absent-form">
+                        <input type="text" name="reason" placeholder="Reason (optional)" class="absent-input">
+                        <button type="submit" class="btn-absent">Mark Absent</button>
+                    </form>
+                </div>
+
+                <!-- Weekly chart card -->
+                <div class="card">
+                    <div class="card-title">Weekly Punch-Ins</div>
+                    <%
+                        var safeLabels = (typeof p_labels !== 'undefined' && Array.isArray(p_labels)) ? p_labels : [];
+                        var safeCounts = (typeof p_counts !== 'undefined' && Array.isArray(p_counts)) ? p_counts : [];
+                    %>
+                    <% if (safeLabels.length > 0) { %>
+                        <div class="chart-wrap">
+                            <canvas id="punchChart"></canvas>
+                        </div>
+                    <% } else { %>
+                        <div style="height:220px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
+                            <span style="font-size:32px;">📭</span>
+                            <p style="color:var(--muted);font-size:13px;">No punch data this week</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- ── LEAVE OVERVIEW ────────────────── -->
+            <div class="section-title" style="margin-top:8px;">My Leaves</div>
+            <%
+                var leaveReqs = (typeof leave_requests !== 'undefined' && Array.isArray(leave_requests)) ? leave_requests : [];
+
+                function fmtDate(val) {
+                    if (!val) return '—';
+                    var d = new Date(val);
+                    if (isNaN(d.getTime())) return String(val);
+                    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                }
+            %>
+            <div class="card" style="padding:0;overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);">
+                    <div class="card-title" style="margin-bottom:0;">Recent Leave Requests</div>
+                    <button onclick="showSection('leave')" style="background:var(--gold-s);color:var(--gold);border:1px solid var(--gold-g);padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer;">
+                        + Apply Leave
+                    </button>
+                </div>
+                <% if (leaveReqs.length > 0) { %>
+                    <div>
+                        <% leaveReqs.slice(0,5).forEach(function(lr) { %>
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid rgba(30,45,69,0.5);">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <div style="width:36px;height:36px;border-radius:9px;background:var(--gold-s);border:1px solid var(--gold-g);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🏖️</div>
+                                <div>
+                                    <div style="font-size:13.5px;font-weight:600;color:var(--txt);">
+                                        <%= lr.leave_type || lr.type || lr.reason || 'Leave' %>
+                                    </div>
+                                    <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                        <%= fmtDate(lr.from_date || lr.date) %>
+                                        <% if (lr.to_date && String(lr.to_date) !== String(lr.from_date)) { %>
+                                            <span style="color:var(--dim);"> → </span><%= fmtDate(lr.to_date) %>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <div style="padding:40px;text-align:center;">
+                        <span style="font-size:32px;">🏖️</span>
+                        <p style="color:var(--muted);font-size:13px;margin-top:10px;">No leave requests yet</p>
+                        <button onclick="showSection('leave')" style="margin-top:14px;background:var(--gold-s);color:var(--gold);border:1px solid var(--gold-g);padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;">
+                            Apply for Leave
+                        </button>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- ══ ATTENDANCE SECTION ════════════════ -->
+        <div id="section-attendance" style="display:none;">
+            <div class="section-title">My Attendance Records</div>
+            <div class="card" style="padding:0;">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Date</th>
+                                <th>Punch In</th>
+                                <th>Punch Out</th>
+                                <th>In Location</th>
+                                <th>Out Location</th>
+                                <th>Status</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (typeof attendance !== 'undefined' && attendance && attendance.length > 0) { %>
+                                <% attendance.forEach(function(row, idx) { %>
+                                <tr>
+                                    <td style="color:var(--dim)"><%= idx + 1 %></td>
+                                    <td style="font-weight:600;"><%= row.date || '—' %></td>
+                                    <td style="color:var(--green);font-weight:600;"><%= row.time_in || '—' %></td>
+                                    <td style="color:var(--red);font-weight:600;"><%= row.time_out || '—' %></td>
+                                    <td>
+                                        <% if (row.location_in) {
+                                            var parts = String(row.location_in).split('|');
+                                            if (parts.length === 3) { %>
+                                                <a href="https://www.google.com/maps?q=<%= parts[1] %>,<%= parts[2] %>" target="_blank" class="loc-link">📍 <%= parts[0] %></a>
+                                            <% } else { %>
+                                                <span style="color:var(--muted)"><%= row.location_in %></span>
+                                            <% } %>
+                                        <% } else { %><span style="color:var(--dim)">—</span><% } %>
+                                    </td>
+                                    <td>
+                                        <% if (row.location_out) {
+                                            var partsO = String(row.location_out).split('|');
+                                            if (partsO.length === 3) { %>
+                                                <a href="https://www.google.com/maps?q=<%= partsO[1] %>,<%= partsO[2] %>" target="_blank" class="loc-link">📍 <%= partsO[0] %></a>
+                                            <% } else { %>
+                                                <span style="color:var(--muted)"><%= row.location_out %></span>
+                                            <% } %>
+                                        <% } else { %><span style="color:var(--dim)">—</span><% } %>
+                                    </td>
+                                    <td>
+                                        <% var s = (row.status || '').toLowerCase(); %>
+                                        <span class="badge badge-<%= s === 'present' ? 'present' : s === 'absent' ? 'absent' : 'leave' %>">
+                                            <%= row.status || '—' %>
+                                        </span>
+                                    </td>
+                                    <td style="color:var(--muted);font-size:12px;"><%= row.reason || '—' %></td>
+                                </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="8" style="text-align:center;padding:40px;color:var(--muted);">
+                                        No attendance records found
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ LEAVE SECTION ════════════════════ -->
+        <div id="section-leave" style="display:none;">
+            <div class="section-title">Apply for Leave</div>
+            <div class="card" style="max-width:560px;">
+                <form action="/apply_leave" method="POST" class="leave-form">
+                    <div class="form-row">
+                        <div class="field-group">
+                            <label class="field-label">From Date</label>
+                            <input type="date" name="from_date" class="field-input" required>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">To Date</label>
+                            <input type="date" name="to_date" class="field-input" required>
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Leave Type</label>
+                        <select name="leave_type" class="field-select" required>
+                            <option value="" disabled selected>Select leave type</option>
+                            <option value="Personal Leave">Personal Leave</option>
+                            <option value="Sick Leave">Sick Leave</option>
+                            <option value="Casual Leave">Casual Leave</option>
+                            <option value="Earned Leave">Earned Leave</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Reason</label>
+                        <textarea name="reason" rows="3" class="field-textarea" placeholder="Briefly describe your reason for leave..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit-leave">Submit Leave Request</button>
+                </form>
+            </div>
+        </div>
+
+    </div><!-- end page-content -->
+</div><!-- end main -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    /* ── Live clock & date ──────────────────────── */
+    function updateClock() {
+        var now = new Date();
+        document.getElementById('liveClock').textContent = now.toLocaleTimeString('en-IN', { hour12: true });
+        document.getElementById('dateBadge').textContent = now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    /* ── Section switching ──────────────────────── */
+    var sections  = ['dashboard', 'attendance', 'leave'];
+    var navTitles = { dashboard: 'Dashboard', attendance: 'My Attendance', leave: 'Apply Leave' };
+
+    function showSection(name) {
+        sections.forEach(function(s) {
+            var el = document.getElementById('section-' + s);
+            if (el) el.style.display = (s === name) ? 'block' : 'none';
+        });
+        document.getElementById('topbarTitle').textContent = navTitles[name] || 'Dashboard';
+        document.querySelectorAll('.nav-item').forEach(function(btn) { btn.classList.remove('active'); });
+        var active = document.querySelector('.nav-item[onclick*="' + name + '"]');
+        if (active) active.classList.add('active');
+        closeSidebar();
+    }
+
+    /* ── Sidebar toggle (mobile) ────────────────── */
+    function openSidebar() {
+        document.getElementById('sidebar').classList.add('open');
+        document.getElementById('overlay').classList.add('open');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('overlay').classList.remove('open');
+    }
+
+    /* ── Chart ──────────────────────────────────── */
+    window.addEventListener('DOMContentLoaded', function() {
+        var canvas = document.getElementById('punchChart');
+        if (!canvas) return;
+
+        var labels = <%- JSON.stringify(safeLabels) %>;
+        var counts = <%- JSON.stringify(safeCounts) %>;
+
+        if (!labels.length) return;
+
+        new Chart(canvas, {
             type: 'bar',
             data: {
-                labels: <% - JSON.stringify(p_labels) %>,
+                labels: labels,
                 datasets: [{
                     label: 'Punch-ins',
-                    data: <% - JSON.stringify(p_counts) %>,
-                    backgroundColor: '#3b82f6'
+                    data: counts,
+                    backgroundColor: 'rgba(201,168,76,0.25)',
+                    borderColor: '#c9a84c',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false,
                 }]
             },
             options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            color: '#fff'
-                        },
-                        grid: {
-                            color: '#334155'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: '#fff'
-                        },
-                        grid: {
-                            color: '#334155'
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#161d2e',
+                        borderColor: '#1e2d45',
+                        borderWidth: 1,
+                        titleColor: '#e8eaf0',
+                        bodyColor: '#c9a84c',
+                        callbacks: {
+                            label: function(ctx) { return '  ' + ctx.parsed.y + ' punch-in(s)'; }
                         }
                     }
                 },
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#fff'
-                        }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#6b7a99', stepSize: 1 },
+                        grid: { color: 'rgba(30,45,69,0.8)' },
+                        border: { display: false }
+                    },
+                    x: {
+                        ticks: { color: '#6b7a99' },
+                        grid: { display: false },
+                        border: { display: false }
                     }
                 }
             }
         });
-    </script>
+    });
+</script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
