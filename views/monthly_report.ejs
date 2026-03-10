@@ -2,106 +2,560 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monthly Attendance Report</title>
 
     <% if (!isPDF) { %>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <% } %>
 
+<%
+/* ─────────────────────────────────────────────────────
+   ✅ TIMEZONE-SAFE DATE FORMATTER
+   Using getFullYear/getMonth/getDate (local time) instead
+   of toISOString() which uses UTC and shifts dates by 1 day
+   when server timezone is ahead of UTC (e.g. IST UTC+5:30)
+───────────────────────────────────────────────────── */
+function safeDate(val) {
+    if (!val) return '—';
+
+    // If it's already a plain YYYY-MM-DD string, return as-is
+    if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
+        return val.trim();
+    }
+
+    // If it's a string like "2024-01-09T00:00:00.000Z" or a Date object
+    var d = (val instanceof Date) ? val : new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+
+    // ✅ Use LOCAL date parts — avoids UTC shift
+    var yyyy = d.getFullYear();
+    var mm   = String(d.getMonth() + 1).padStart('00', 2).slice(-2);
+    var dd   = String(d.getDate()).padStart('00', 2).slice(-2);
+    return yyyy + '-' + mm + '-' + dd;
+}
+
+// Polyfill padStart for older Node
+if (!String.prototype.padStart) {
+    String.prototype.padStart = function(len, fill) {
+        var s = String(this);
+        while (s.length < len) s = fill + s;
+        return s;
+    };
+}
+
+const safeRecords = Array.isArray(records) ? records : [];
+const totalRows   = safeRecords.length;
+const presentRows = safeRecords.filter(function(r){ return !r.absent; }).length;
+const absentRows  = safeRecords.filter(function(r){ return r.absent; }).length;
+const attendRate  = totalRows > 0 ? Math.round(presentRows / totalRows * 100) : 0;
+%>
+
     <style>
-        body {
-            <% if (isPDF) { %>
-                background-color: #ffffff;
-                color: #000000;
-            <% } else { %>
-                background-color: #13203c;
-                color: #ffffff;
-            <% } %>
-            font-family: Arial, sans-serif;
-        }
+    <% if (isPDF) { %>
+    /* ════ PDF STYLES ════════════════════════════════ */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; color: #000; font-family: Arial, sans-serif; font-size: 11px; padding: 24px; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+    .pdf-header { border-bottom: 2px solid #1e3a5f; padding-bottom: 14px; margin-bottom: 18px; }
+    .pdf-header h1 { font-size: 20px; font-weight: 700; color: #1e3a5f; margin-bottom: 2px; }
+    .pdf-header p  { font-size: 12px; color: #555; }
 
-        table thead {
-            background-color: <% if (isPDF) { %>#e9ecef<% } else { %>#2479f0<% } %>;
-            color: <% if (isPDF) { %>#000<% } else { %>#fff<% } %>;
-        }
+    .summary-row { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .s-box { border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 16px; min-width: 110px; }
+    .s-box .val { font-size: 20px; font-weight: 700; color: #1e3a5f; }
+    .s-box .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-top: 2px; }
 
-        th, td {
-            padding: 8px;
-            border: 1px solid #ddd;
-            font-size: 13px;
-            text-align: center;
-        }
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    thead th { background: #1e3a5f; color: #fff; padding: 8px 10px; text-align: center; font-size: 10px; letter-spacing: 0.5px; font-weight: 600; }
+    tbody td { padding: 7px 10px; text-align: center; font-size: 10px; border-bottom: 1px solid #e5e7eb; color: #111; }
+    tbody tr:nth-child(even) td { background: #f8fafc; }
 
-        table tbody td {
-            <% if (!isPDF) { %>
-                background-color: #2e518a;
-            <% } %>
-        }
+    .badge-p { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; }
+    .badge-a { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; }
 
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 12px;
-            opacity: 0.7;
-        }
+    .footer { margin-top: 24px; text-align: center; font-size: 9px; color: #aaa; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+
+    <% } else { %>
+    /* ════ WEB STYLES ════════════════════════════════ */
+    :root {
+        --bg:      #0b0f1a;
+        --surface: #111827;
+        --card:    #161d2e;
+        --hover:   #1c2540;
+        --border:  #1e2d45;
+        --gold:    #c9a84c;
+        --gold-s:  rgba(201,168,76,0.12);
+        --gold-g:  rgba(201,168,76,0.25);
+        --txt:     #e8eaf0;
+        --muted:   #6b7a99;
+        --dim:     #3d4f6e;
+        --blue:    #3b7ef8;
+        --green:   #22c55e;
+        --red:     #ef4444;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        background: var(--bg);
+        color: var(--txt);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        min-height: 100vh;
+    }
+
+    .wrap { max-width: 1300px; margin: 0 auto; padding: 36px 24px; }
+
+    /* ── Header ───────────────────────────────── */
+    .pg-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+    .eyebrow {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 6px;
+    }
+    .pg-header h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 26px;
+        font-weight: 700;
+    }
+    .pg-header h1 em { color: var(--gold); font-style: normal; }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 9px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all .2s;
+        white-space: nowrap;
+    }
+    .btn-back:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── Stat Cards ───────────────────────────── */
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+    .s-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        position: relative;
+        overflow: hidden;
+        transition: border-color .2s, transform .2s;
+    }
+    .s-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+    .s-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+    }
+    .s-card.c-gold::before { background: var(--gold); }
+    .s-card.c-blue::before { background: var(--blue); }
+    .s-card.c-grn::before  { background: var(--green); }
+    .s-card.c-red::before  { background: var(--red); }
+
+    .s-lbl {
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+    }
+    .s-val {
+        font-family: 'Playfair Display', serif;
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1;
+    }
+    .s-sub { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+
+    /* ── Progress Bar ─────────────────────────── */
+    .rate-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+    .rate-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .rate-sub { font-size: 12px; color: var(--muted); }
+    .progress-bar-wrap { flex: 1; min-width: 200px; }
+    .progress-track {
+        background: var(--hover);
+        border-radius: 6px;
+        height: 10px;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+    .progress-fill {
+        height: 100%;
+        border-radius: 6px;
+        background: linear-gradient(90deg, var(--gold), rgba(201,168,76,0.6));
+        transition: width 1s ease;
+    }
+    .progress-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--muted);
+    }
+
+    /* ── Table ────────────────────────────────── */
+    .sec-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .sec-line {
+        width: 32px;
+        height: 2px;
+        background: var(--gold);
+        border-radius: 2px;
+        margin-bottom: 16px;
+    }
+    .t-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .t-card table { width: 100%; border-collapse: collapse; }
+    .t-card thead th {
+        background: var(--hover);
+        color: var(--muted);
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        text-align: center;
+        white-space: nowrap;
+    }
+    .t-card tbody td {
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .t-card tbody tr:last-child td { border-bottom: none; }
+    .t-card tbody tr:hover td { background: var(--hover); }
+
+    .bp { background: rgba(34,197,94,.12); color: #22c55e; border: 1px solid rgba(34,197,94,.25); font-size: 10.5px; font-weight: 600; padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
+    .ba { background: rgba(239,68,68,.12); color: #ef4444; border: 1px solid rgba(239,68,68,.25); font-size: 10.5px; font-weight: 600; padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
+
+    .loc-link { color: #60a5fa; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 3px; }
+    .loc-link:hover { color: #93c5fd; text-decoration: underline; }
+    .loc-ico { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
+
+    /* ── Footer ───────────────────────────────── */
+    .page-footer {
+        margin-top: 32px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--dim);
+        border-top: 1px solid var(--border);
+        padding-top: 20px;
+    }
+    .page-footer em { color: var(--gold); font-style: normal; }
+
+    /* ── Scrollbar ────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+    /* ── Responsive ───────────────────────────── */
+    @media (max-width: 900px) {
+        .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+        .stats   { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .wrap    { padding: 18px 12px; }
+        .s-val   { font-size: 22px; }
+        .hide-sm { display: none; }
+    }
+    <% } %>
     </style>
 </head>
 
-<body class="p-4">
-<div class="container-fluid">
+<body <% if (isPDF) { %>class="p-4"<% } %>>
 
-    <h3>📅 Monthly Attendance Report</h3>
-    <h5><%= monthName %></h5>
+<% if (isPDF) { %>
+<!-- ════════════ PDF VERSION ════════════════════ -->
+<div class="pdf-header">
+    <h1>📅 Monthly Attendance Report</h1>
+    <p><%= monthName %> &nbsp;·&nbsp; Generated on <%= new Date().toLocaleString() %></p>
+</div>
 
-    <% if (!isPDF) { %>
-        <div class="mb-3">
-            <a href="/admin" class="btn btn-light">← Back</a>
+<div class="summary-row">
+    <div class="s-box"><div class="val"><%= totalRows %></div><div class="lbl">Total Records</div></div>
+    <div class="s-box"><div class="val"><%= presentRows %></div><div class="lbl">Present</div></div>
+    <div class="s-box"><div class="val"><%= absentRows %></div><div class="lbl">Absent</div></div>
+    <div class="s-box"><div class="val"><%= attendRate %>%</div><div class="lbl">Attend Rate</div></div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Emp ID</th>
+            <th>Name</th>
+            <th>Date</th>
+            <th>Punch In</th>
+            <th>Punch Out</th>
+            <th>In Location</th>
+            <th>Out Location</th>
+            <th>Status</th>
+            <th>Reason</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% safeRecords.forEach(function(r, i) { %>
+        <tr>
+            <td><%= i + 1 %></td>
+            <td><%= r.emp_id || '—' %></td>
+            <td><%= r.name || '—' %></td>
+            <!-- ✅ safeDate() used here — fixes the UTC-1 day shift bug -->
+            <td><%= safeDate(r.date) %></td>
+            <td><%= r.time_in  || '—' %></td>
+            <td><%= r.time_out || '—' %></td>
+            <td><%= r.location_in  || '—' %></td>
+            <td><%= r.location_out || '—' %></td>
+            <td>
+                <span class="<%= r.absent ? 'badge-a' : 'badge-p' %>">
+                    <%= r.absent ? 'Absent' : 'Present' %>
+                </span>
+            </td>
+            <td><%= r.reason || '—' %></td>
+        </tr>
+        <% }); %>
+    </tbody>
+</table>
+
+<div class="footer">Smart Attendance System &nbsp;|&nbsp; <%= monthName %></div>
+
+<% } else { %>
+<!-- ════════════ WEB VERSION ════════════════════ -->
+<div class="wrap">
+
+    <!-- Header -->
+    <div class="pg-header">
+        <div>
+            <div class="eyebrow">Smart Attendance System</div>
+            <h1>Monthly Report — <em><%= monthName %></em></h1>
         </div>
-    <% } %>
-
-    <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th>Employee ID</th>
-                    <th>Name</th>
-                    <th>Date</th>
-                    <th>Punch In</th>
-                    <th>Punch Out</th>
-                    <th>In Location</th>
-                    <th>Out Location</th>
-                    <th>Absent</th>
-                    <th>Reason</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% records.forEach(r => { %>
-                    <tr>
-                        <td><%= r.emp_id %></td>
-                        <td><%= r.name %></td>
-                        <td><%= r.date %></td>
-                        <td><%= r.time_in %></td>
-                        <td><%= r.time_out %></td>
-                        <td><%= r.location_in %></td>
-                        <td><%= r.location_out %></td>
-                        <td><%= r.absent %></td>
-                        <td><%= r.reason %></td>
-                    </tr>
-                <% }) %>
-            </tbody>
-        </table>
+        <a href="/admin" class="btn-back">← Back to Dashboard</a>
     </div>
 
-    <div class="footer">
-        Generated on <%= new Date().toLocaleString() %> |
-        Smart Attendance System
+    <!-- Stat Cards -->
+    <div class="stats">
+        <div class="s-card c-gold">
+            <div class="s-lbl">Total Records</div>
+            <div class="s-val"><%= totalRows %></div>
+            <div class="s-sub">All entries this month</div>
+        </div>
+        <div class="s-card c-blue">
+            <div class="s-lbl">Present Days</div>
+            <div class="s-val"><%= presentRows %></div>
+            <div class="s-sub">Punched in</div>
+        </div>
+        <div class="s-card c-red">
+            <div class="s-lbl">Absent Days</div>
+            <div class="s-val"><%= absentRows %></div>
+            <div class="s-sub">Marked absent</div>
+        </div>
+        <div class="s-card c-grn">
+            <div class="s-lbl">Attendance Rate</div>
+            <div class="s-val"><%= attendRate %>%</div>
+            <div class="s-sub">Overall this month</div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="rate-card">
+        <div>
+            <div class="rate-title">Monthly Attendance Rate</div>
+            <div class="rate-sub"><%= presentRows %> present out of <%= totalRows %> total records</div>
+        </div>
+        <div class="progress-bar-wrap">
+            <div class="progress-track">
+                <div class="progress-fill" style="width:<%= attendRate %>%;"></div>
+            </div>
+            <div class="progress-labels">
+                <span>0%</span>
+                <span style="color:var(--gold);font-weight:600;"><%= attendRate %>% attendance</span>
+                <span>100%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="sec-title">Attendance Records</div>
+    <div class="sec-line"></div>
+
+    <div class="t-card">
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Emp ID</th>
+                        <th>Name</th>
+                        <th>Date</th>
+                        <th>Punch In</th>
+                        <th>Punch Out</th>
+                        <th class="hide-sm">In Location</th>
+                        <th class="hide-sm">Out Location</th>
+                        <th>Status</th>
+                        <th class="hide-sm">Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <% safeRecords.forEach(function(r, i) {
+                    const lIn  = (r.location_in  && r.location_in  !== '—' && r.location_in  !== 'null') ? r.location_in.split('|')  : null;
+                    const lOut = (r.location_out && r.location_out !== '—' && r.location_out !== 'null') ? r.location_out.split('|') : null;
+                %>
+                <tr>
+                    <td style="color:var(--muted);"><%= i + 1 %></td>
+
+                    <td style="font-family:monospace;color:var(--muted);font-size:12px;">
+                        <%= r.emp_id || '—' %>
+                    </td>
+
+                    <td style="font-weight:600;text-align:left;padding-left:16px;">
+                        <%= r.name || '—' %>
+                    </td>
+
+                    <!-- ✅ FIXED: safeDate() prevents UTC timezone day-shift bug -->
+                    <td style="white-space:nowrap;">
+                        <%= safeDate(r.date) %>
+                    </td>
+
+                    <td style="white-space:nowrap;">
+                        <% if (r.time_in && r.time_in !== 'null') { %>
+                            <span style="color:var(--green);font-weight:500;"><%= r.time_in %></span>
+                        <% } else { %>
+                            <span style="color:var(--dim);">—</span>
+                        <% } %>
+                    </td>
+
+                    <td style="white-space:nowrap;">
+                        <% if (r.time_out && r.time_out !== 'null') { %>
+                            <span style="color:var(--muted);"><%= r.time_out %></span>
+                        <% } else { %>
+                            <span style="color:var(--dim);">—</span>
+                        <% } %>
+                    </td>
+
+                    <!-- In Location -->
+                    <td class="hide-sm" style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        <% if (lIn && lIn.length === 3) { %>
+                            <a href="https://www.google.com/maps?q=<%= lIn[1] %>,<%= lIn[2] %>"
+                               target="_blank" rel="noopener noreferrer" class="loc-link" title="<%= lIn[0] %>">
+                                <svg class="loc-ico" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                </svg>
+                                <%= lIn[0].substring(0, 20) %><% if(lIn[0].length > 20){%>...<% } %>
+                            </a>
+                        <% } else if (r.location_in && r.location_in !== 'null') { %>
+                            <span style="color:var(--muted);font-size:12px;" title="<%= r.location_in %>">
+                                <%= r.location_in.substring(0, 20) %>
+                            </span>
+                        <% } else { %>
+                            <span style="color:var(--dim);">—</span>
+                        <% } %>
+                    </td>
+
+                    <!-- Out Location -->
+                    <td class="hide-sm" style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        <% if (lOut && lOut.length === 3) { %>
+                            <a href="https://www.google.com/maps?q=<%= lOut[1] %>,<%= lOut[2] %>"
+                               target="_blank" rel="noopener noreferrer" class="loc-link" title="<%= lOut[0] %>">
+                                <svg class="loc-ico" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                </svg>
+                                <%= lOut[0].substring(0, 20) %><% if(lOut[0].length > 20){%>...<% } %>
+                            </a>
+                        <% } else if (r.location_out && r.location_out !== 'null') { %>
+                            <span style="color:var(--muted);font-size:12px;" title="<%= r.location_out %>">
+                                <%= r.location_out.substring(0, 20) %>
+                            </span>
+                        <% } else { %>
+                            <span style="color:var(--dim);">—</span>
+                        <% } %>
+                    </td>
+
+                    <!-- Status -->
+                    <td>
+                        <% if (r.absent) { %>
+                            <span class="ba">Absent</span>
+                        <% } else { %>
+                            <span class="bp">Present</span>
+                        <% } %>
+                    </td>
+
+                    <!-- Reason -->
+                    <td class="hide-sm" style="color:var(--gold);font-size:12.5px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        <%= r.reason || '—' %>
+                    </td>
+                </tr>
+                <% }); %>
+
+                <% if (safeRecords.length === 0) { %>
+                <tr>
+                    <td colspan="10" style="text-align:center;color:var(--dim);padding:32px;font-size:13px;">
+                        No records found for <%= monthName %>
+                    </td>
+                </tr>
+                <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="page-footer">
+        Generated on <%= new Date().toLocaleString() %> &nbsp;|&nbsp; <em>Smart Attendance System</em>
     </div>
 
 </div>
+<% } %>
+
 </body>
 </html>

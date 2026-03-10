@@ -1,502 +1,1043 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
     <style>
+        :root {
+            --bg-base:      #0b0f1a;
+            --bg-surface:   #111827;
+            --bg-card:      #161d2e;
+            --bg-hover:     #1c2540;
+            --border:       #1e2d45;
+            --accent:       #c9a84c;
+            --accent-soft:  rgba(201,168,76,0.12);
+            --accent-glow:  rgba(201,168,76,0.25);
+            --text-primary: #e8eaf0;
+            --text-muted:   #6b7a99;
+            --text-dim:     #3d4f6e;
+            --blue:         #3b7ef8;
+            --blue-soft:    rgba(59,126,248,0.12);
+            --green:        #22c55e;
+            --red:          #ef4444;
+            --yellow:       #facc15;
+            --sidebar-w:    260px;
+            --topbar-h:     60px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            background: #111827;
-            color: #fff
-        }
-
-        .sidebar {
-            width: 240px;
-            background: #1f2937;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
             min-height: 100vh;
-            padding: 1.5rem
         }
 
-        .sidebar a {
-            color: #fff;
+        /* ─── SIDEBAR ─────────────────────────────────── */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-brand {
+            padding: 24px 24px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-brand .brand-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .sidebar-brand h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            color: var(--text-primary);
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            overflow-y: auto;
+        }
+
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            padding: 8px 12px 6px;
+            margin-top: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--text-muted);
             text-decoration: none;
-            display: block;
-            margin-bottom: 1rem
+            font-weight: 500;
+            font-size: 13.5px;
+            margin-bottom: 2px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
         }
 
-        .sidebar a:hover {
-            text-decoration: underline
+        .nav-item:hover, .nav-item.active {
+            background: var(--accent-soft);
+            color: var(--accent);
+            border-color: var(--accent-glow);
         }
 
-        .content {
-            padding: 2rem;
-            flex: 1
+        .nav-item .nav-icon {
+            width: 18px;
+            text-align: center;
+            font-size: 15px;
+            flex-shrink: 0;
         }
 
-        .card {
-            background: #1e293b;
-            border: none;
+        .nav-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 12px 12px;
+        }
+
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ─── TOPBAR ──────────────────────────────────── */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-w);
+            right: 0;
+            height: var(--topbar-h);
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 999;
+            transition: left 0.3s ease;
+        }
+
+        .topbar-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .date-badge {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .hamburger {
+            display: none;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* ─── MAIN CONTENT ────────────────────────────── */
+        .main {
+            margin-left: var(--sidebar-w);
+            padding-top: var(--topbar-h);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .page-content {
+            padding: 24px;
+        }
+
+        /* ─── SECTIONS ────────────────────────────────── */
+        section { display: none; }
+        section.active { display: block; }
+
+        /* ─── STAT CARDS ──────────────────────────────── */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            color: #fff
+            padding: 18px 20px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
         }
 
-        .btn-primary {
-            background: #3b82f6;
-            border: none
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
         }
 
-        .btn-warning {
-            background: #facc15;
-            border: none;
-            color: #000
+        .stat-card.gold::before  { background: var(--accent); }
+        .stat-card.blue::before  { background: var(--blue); }
+        .stat-card.green::before { background: var(--green); }
+        .stat-card.red::before   { background: var(--red); }
+
+        .stat-card:hover { border-color: var(--accent); }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
         }
 
-        .btn-danger {
-            background: #ef4444;
-            border: none
+        .stat-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
         }
 
-        .table-dark th,
-        .table-dark td {
-            background: #1e293b !important;
-            color: #fff
+        .stat-sub {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: 6px;
         }
 
-        .alert {
-            border-radius: 10px
+        /* ─── CHART CARD ──────────────────────────────── */
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
         }
 
-        section {
-            display: none
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
         }
 
-        section.active {
-            display: block
+        .chart-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
         }
 
+        .chart-subtitle {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .chart-badge {
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid var(--accent-glow);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        /* ✅ COMPACT CHART - controlled height */
+        .chart-wrapper {
+            position: relative;
+            height: 180px;
+            width: 100%;
+        }
+
+        /* ─── SECTION HEADER ──────────────────────────── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .section-divider {
+            width: 32px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 2px;
+            margin-top: 4px;
+        }
+
+        /* ─── TABLE ───────────────────────────────────── */
+        .table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .table-card .table {
+            margin: 0;
+        }
+
+        .table-card table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-card thead th {
+            background: var(--bg-hover);
+            color: var(--text-muted);
+            font-size: 10.5px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .table-card tbody td {
+            padding: 11px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 13.5px;
+            vertical-align: middle;
+        }
+
+        .table-card tbody tr:last-child td { border-bottom: none; }
+
+        .table-card tbody tr:hover td { background: var(--bg-hover); }
+
+        /* ─── BADGES ──────────────────────────────────── */
+        .badge-present {
+            background: rgba(34,197,94,0.12);
+            color: #22c55e;
+            border: 1px solid rgba(34,197,94,0.25);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .badge-absent {
+            background: rgba(239,68,68,0.12);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.25);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .badge-info {
+            background: var(--blue-soft);
+            color: var(--blue);
+            border: 1px solid rgba(59,126,248,0.25);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        /* ─── LOCATION LINK ───────────────────────────── */
         .location-link {
-            color: #60a5fa !important;
+            color: #60a5fa;
             text-decoration: none;
-            font-size: 0.85rem;
+            font-size: 12px;
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .location-link:hover { color: #93c5fd; text-decoration: underline; }
+        .location-icon { width: 12px; height: 12px; fill: currentColor; }
+        .location-cell { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ─── FORM CONTROLS ───────────────────────────── */
+        .form-control, .form-select {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 8px;
+            font-size: 13.5px;
+            padding: 8px 12px;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            background: var(--bg-hover);
+            border-color: var(--accent);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .form-control::placeholder { color: var(--text-muted); }
+
+        /* ─── BUTTONS ─────────────────────────────────── */
+        .btn-gold {
+            background: var(--accent);
+            color: #0b0f1a;
+            border: none;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 8px 18px;
+            border-radius: 8px;
             transition: all 0.2s;
         }
+        .btn-gold:hover { background: #d4b05a; color: #0b0f1a; }
 
-        .location-link:hover {
-            color: #93c5fd !important;
-            text-decoration: underline;
+        .btn-blue {
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 5px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .btn-blue:hover { background: #2563eb; color: #fff; }
+
+        .btn-warn {
+            background: rgba(250,204,21,0.12);
+            color: var(--yellow);
+            border: 1px solid rgba(250,204,21,0.25);
+            font-weight: 600;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .btn-warn:hover { background: rgba(250,204,21,0.2); color: var(--yellow); }
+
+        .btn-del {
+            background: rgba(239,68,68,0.1);
+            color: var(--red);
+            border: 1px solid rgba(239,68,68,0.2);
+            font-weight: 600;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .btn-del:hover { background: rgba(239,68,68,0.2); color: var(--red); }
+
+        /* ─── ALERTS ──────────────────────────────────── */
+        .alert {
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 13.5px;
+            margin-bottom: 16px;
         }
 
-        .location-icon {
-            width: 14px;
-            height: 14px;
-            fill: currentColor;
+        /* ─── OVERLAY (mobile) ────────────────────────── */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 999;
         }
 
-        .location-cell {
-            max-width: 200px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        /* ─── RESPONSIVE ──────────────────────────────── */
+        @media (max-width: 1024px) {
+            .stat-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-overlay.open {
+                display: block;
+            }
+            .topbar {
+                left: 0;
+            }
+            .main {
+                margin-left: 0;
+            }
+            .hamburger {
+                display: block;
+            }
+            .stat-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            .page-content {
+                padding: 16px;
+            }
+            .chart-wrapper {
+                height: 150px;
+            }
+            .table-card thead th,
+            .table-card tbody td {
+                padding: 10px 12px;
+                font-size: 12.5px;
+            }
+            /* Hide less critical columns on mobile */
+            .hide-mobile { display: none; }
+        }
+
+        @media (max-width: 480px) {
+            .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-value { font-size: 22px; }
+            .topbar-title { font-size: 15px; }
+            .date-badge { display: none; }
+        }
+
+        /* ─── ADD EMPLOYEE CARD ───────────────────────── */
+        .form-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            max-width: 700px;
+        }
+
+        .form-label {
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        /* ─── SCROLLBAR ───────────────────────────────── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* ─── ANIMATIONS ──────────────────────────────── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        section.active > * {
+            animation: fadeUp 0.3s ease forwards;
         }
     </style>
 </head>
-
 <body>
 
-    <div class="d-flex">
+<!-- Sidebar Overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <h4>Admin Dashboard</h4>
-            <a href="#dash" class="nav-link" data-target="dash">🏠 Dashboard</a>
-            <a href="#add" class="nav-link" data-target="add">➕ Add Employee</a>
-            <a href="#search" class="nav-link" data-target="search">🔍 Search</a>
-            <a href="/reports">📊 Reports</a>
-            <a href="/monthly_report">📅 Monthly Report</a>
-            <a href="/logout">🚪 Logout</a>
-        </div>
-
-        <!-- Main content -->
-        <div class="content container-fluid">
-
-            <% if (typeof messages !=='undefined' && messages) { %>
-                <% Object.keys(messages).forEach(category=> { %>
-                    <% messages[category].forEach(msg=> { %>
-                        <div class="alert alert-<%= category %> alert-dismissible fade show" role="alert">
-                            <%= msg %>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                        <% }); %>
-                            <% }); %>
-                                <% } %>
-
-                                    <!-- DASHBOARD PANEL -->
-                                    <section id="dash" class="active">
-
-                                        <div class="card p-4 mb-4">
-                                            <h5>Total Punch-ins (Last 7 Days)</h5>
-                                            <canvas id="punchChart" height="100"></canvas>
-                                        </div>
-
-                                        <!-- TODAY'S ATTENDANCE -->
-                                        <h5>Today's Punch Status</h5>
-                                        <div class="table-responsive">
-                                            <table class="table table-dark table-striped table-bordered">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Name</th>
-                                                        <th>Code</th>
-                                                        <th>PIN</th>
-                                                        <th>In Time</th>
-                                                        <th>📍 In Location</th>
-                                                        <th>Out Time</th>
-                                                        <th>📍 Out Location</th>
-                                                        <th>Absent</th>
-                                                        <th>Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-
-                                                    <% attendance.forEach((r, index)=> { %>
-                                                        <tr>
-                                                            <td>
-                                                                <%= index + 1 %>
-                                                            </td>
-                                                            <td>
-                                                                <%= r.name %>
-                                                            </td>
-                                                            <td>
-                                                                <%= r.emp_code %>
-                                                            </td>
-                                                            <td>
-                                                                <%= r.pin || 'None' %>
-                                                            </td>
-
-                                                            <!-- Punch IN Time -->
-                                                            <td>
-                                                                <%= r.time_in || '—' %>
-                                                            </td>
-
-                                                            <!-- Punch IN Location -->
-                                                            <td class="location-cell">
-                                                                <% if (r.location_in && r.location_in !=='—' ) { %>
-                                                                    <% const locParts=r.location_in.split('|'); %>
-                                                                        <% if (locParts.length===3) { %>
-                                                                            <a href="https://www.google.com/maps?q=<%= locParts[1] %>,<%= locParts[2] %>"
-                                                                                target="_blank"
-                                                                                rel="noopener noreferrer"
-                                                                                class="location-link"
-                                                                                onclick="event.stopPropagation();"
-                                                                                title="Click to view on Google Maps: <%= locParts[0] %>">
-                                                                                <svg class="location-icon"
-                                                                                    viewBox="0 0 20 20">
-                                                                                    <path fill-rule="evenodd"
-                                                                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                                                                        clip-rule="evenodd" />
-                                                                                </svg>
-                                                                                <%= locParts[0].substring(0, 25) %>
-                                                                                    <% if (locParts[0].length> 25) {
-                                                                                        %>...<% } %>
-                                                                            </a>
-                                                                            <% } else { %>
-                                                                                <span class="text-muted"
-                                                                                    title="<%= r.location_in %>">
-                                                                                    <%= r.location_in.substring(0, 25)
-                                                                                        %>
-                                                                                        <% if (r.location_in.length> 25)
-                                                                                            { %>...<% } %>
-                                                                                </span>
-                                                                                <% } %>
-                                                                                    <% } else { %>
-                                                                                        <span
-                                                                                            class="text-muted">—</span>
-                                                                                        <% } %>
-                                                            </td>
-
-                                                            <!-- Punch OUT Time -->
-                                                            <td>
-                                                                <%= r.time_out || '—' %>
-                                                            </td>
-
-                                                            <!-- Punch OUT Location -->
-                                                            <td class="location-cell">
-                                                                <% if (r.location_out && r.location_out !=='—' ) { %>
-                                                                    <% const locParts=r.location_out.split('|'); %>
-                                                                        <% if (locParts.length===3) { %>
-                                                                            <a href="https://www.google.com/maps?q=<%= locParts[1] %>,<%= locParts[2] %>"
-                                                                                target="_blank"
-                                                                                rel="noopener noreferrer"
-                                                                                class="location-link"
-                                                                                onclick="event.stopPropagation();"
-                                                                                title="Click to view on Google Maps: <%= locParts[0] %>">
-                                                                                <svg class="location-icon"
-                                                                                    viewBox="0 0 20 20">
-                                                                                    <path fill-rule="evenodd"
-                                                                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                                                                        clip-rule="evenodd" />
-                                                                                </svg>
-                                                                                <%= locParts[0].substring(0, 25) %>
-                                                                                    <% if (locParts[0].length> 25) {
-                                                                                        %>...<% } %>
-                                                                            </a>
-                                                                            <% } else { %>
-                                                                                <span class="text-muted"
-                                                                                    title="<%= r.location_out %>">
-                                                                                    <%= r.location_out.substring(0, 25)
-                                                                                        %>
-                                                                                        <% if (r.location_out.length>
-                                                                                            25) { %>...<% } %>
-                                                                                </span>
-                                                                                <% } %>
-                                                                                    <% } else { %>
-                                                                                        <span
-                                                                                            class="text-muted">—</span>
-                                                                                        <% } %>
-                                                            </td>
-
-                                                            <!-- Absent Reason -->
-                                                            <td>
-                                                                <% if (r.absent) { %>
-                                                                    <span class="badge bg-danger">Absent</span><br>
-                                                                    <small class="text-muted">
-                                                                        <%= r.reason || '' %>
-                                                                    </small>
-                                                                    <% } else { %>
-                                                                        <span class="badge bg-success">Present</span>
-                                                                        <% } %>
-                                                            </td>
-
-                                                            <!-- Actions -->
-                                                            <td>
-                                                                <div class="d-flex gap-1 flex-wrap">
-                                                                    <% if (!r.absent) { %>
-                                                                        <form method="POST"
-                                                                            action="/admin/absent/<%= r.id %>"
-                                                                            class="d-inline">
-                                                                            <input name="reason"
-                                                                                class="form-control form-control-sm mb-1"
-                                                                                placeholder="Reason"
-                                                                                style="width:100px">
-                                                                            <button
-                                                                                class="btn btn-warning btn-sm">Absent</button>
-                                                                        </form>
-                                                                        <% } %>
-
-                                                                            <form method="POST"
-                                                                                action="/delete_employee/<%= r.id %>"
-                                                                                onsubmit="return confirm('Delete <%= r.name %>?')"
-                                                                                class="d-inline">
-                                                                                <button class="btn btn-danger btn-sm"
-                                                                                    type="submit">🗑</button>
-                                                                            </form>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                        <% }); %>
-
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        <hr class="my-4">
-
-                                        <!-- LEAVE REQUESTS -->
-                                        <h5 class="mt-4">Recent Leave Requests </h5>
-                                        <div class="table-responsive">
-                                            <table class="table table-dark table-striped table-bordered">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Employee</th>
-                                                        <th>From Date</th>
-                                                        <th>To Date</th>
-                                                        <th>Days</th>
-                                                        <th>Reason</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <% if (typeof leave_requests !=='undefined' &&
-                                                        leave_requests.length> 0) { %>
-                                                        <% leave_requests.forEach((l, index)=> { %>
-                                                            <tr>
-                                                                <td>
-                                                                    <%= index + 1 %>
-                                                                </td>
-                                                                <td>
-                                                                    <%= l.name %>
-                                                                </td>
-                                                                <td>
-                                                                    <%= new
-                                                                        Date(l.from_date).toISOString().split('T')[0] %>
-                                                                </td>
-                                                                <td>
-                                                                    <%= new Date(l.to_date).toISOString().split('T')[0]
-                                                                        %>
-                                                                </td>
-                                                                <td>
-                                                                    <% const days=Math.floor((new Date(l.to_date) - new
-                                                                        Date(l.from_date)) / (1000 * 60 * 60 * 24)) + 1;
-                                                                        %>
-                                                                        <span class="badge bg-info">
-                                                                            <%= days %> day(s)
-                                                                        </span>
-                                                                </td>
-                                                                <td class="text-warning">
-                                                                    <%= l.reason %>
-                                                                </td>
-                                                            </tr>
-                                                            <% }); %>
-                                                                <% } else { %>
-                                                                    <tr>
-                                                                        <td colspan="6" class="text-center text-muted">
-                                                                            No leave requests</td>
-                                                                    </tr>
-                                                                    <% } %>
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                    </section>
-
-                                    <!-- ADD EMPLOYEE -->
-                                    <section id="add">
-                                        <div class="card p-4">
-                                            <h5>Add New Employee</h5>
-                                            <form action="/add_employee" method="post" class="row g-3 mt-2">
-                                                <div class="col-md-4">
-                                                    <input name="name" class="form-control" placeholder="Full Name"
-                                                        required>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <input name="emp_code" class="form-control"
-                                                        placeholder="Employee Code" required>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <input name="password" type="password" class="form-control"
-                                                        placeholder="Password" required>
-                                                </div>
-                                                <div class="col-12 text-end">
-                                                    <button class="btn btn-primary" type="submit">Add Employee</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </section>
-
-                                    <!-- SEARCH EMPLOYEES -->
-                                    <section id="search" <% if (query) { %>class="active"<% } %>>
-                                            <div class="card p-4">
-                                                <h5>Search Employees</h5>
-                                                <form action="/search" method="get" class="d-flex gap-2 mt-2">
-                                                    <input name="query" class="form-control"
-                                                        placeholder="Search by Name or Code" value="<%= query || '' %>"
-                                                        required>
-                                                    <button class="btn btn-primary" type="submit">Search</button>
-                                                </form>
-
-                                                <% if (typeof employees !=='undefined' && employees.length> 0) { %>
-                                                    <hr>
-                                                    <table class="table table-dark table-bordered mt-3">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>#</th>
-                                                                <th>Name</th>
-                                                                <th>Code</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <% employees.forEach((e, index)=> { %>
-                                                                <tr>
-                                                                    <td>
-                                                                        <%= index + 1 %>
-                                                                    </td>
-                                                                    <td>
-                                                                        <%= e.name %>
-                                                                    </td>
-                                                                    <td>
-                                                                        <%= e.emp_code %>
-                                                                    </td>
-                                                                </tr>
-                                                                <% }); %>
-                                                        </tbody>
-                                                    </table>
-                                                    <% } %>
-                                            </div>
-                                    </section>
-
-        </div>
+<!-- ── SIDEBAR ─────────────────────────────────────────── -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-label">Management System</div>
+        <h2>Admin Panel</h2>
     </div>
 
-    <!-- Chart.js -->
-    <script>
-        new Chart(document.getElementById('punchChart'), {
+    <div class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a class="nav-item active" data-target="dash" href="#dash">
+            <span class="nav-icon">◈</span> Dashboard
+        </a>
+        <a class="nav-item" data-target="add" href="#add">
+            <span class="nav-icon">＋</span> Add Employee
+        </a>
+        <a class="nav-item" data-target="search" href="#search">
+            <span class="nav-icon">⊙</span> Search
+        </a>
+
+        <div class="nav-divider"></div>
+        <div class="nav-section-label">Reports</div>
+        <a class="nav-item" href="/reports">
+            <span class="nav-icon">◎</span> Reports
+        </a>
+        <a class="nav-item" href="/monthly_report">
+            <span class="nav-icon">▦</span> Monthly Report
+        </a>
+
+        <div class="nav-divider"></div>
+    </div>
+
+    <div class="sidebar-footer">
+        <a class="nav-item" href="/logout" style="color:var(--red);">
+            <span class="nav-icon">⏻</span> Logout
+        </a>
+    </div>
+</nav>
+
+<!-- ── TOPBAR ──────────────────────────────────────────── -->
+<header class="topbar">
+    <div class="d-flex align-items-center gap-3">
+        <button class="hamburger" id="hamburgerBtn">☰</button>
+        <span class="topbar-title" id="topbarTitle">Dashboard</span>
+    </div>
+    <div class="topbar-right">
+        <span class="date-badge" id="currentDate"></span>
+    </div>
+</header>
+
+<!-- ── MAIN ────────────────────────────────────────────── -->
+<main class="main">
+    <div class="page-content">
+
+        <!-- Flash Messages -->
+        <% if (typeof messages !== 'undefined' && messages) { %>
+            <% Object.keys(messages).forEach(category => { %>
+                <% messages[category].forEach(msg => { %>
+                    <div class="alert alert-dismissible fade show" role="alert">
+                        <%= msg %>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+                    </div>
+                <% }); %>
+            <% }); %>
+        <% } %>
+
+        <!-- ══ DASHBOARD SECTION ═══════════════════════ -->
+        <section id="dash" class="active">
+
+            <!-- Stat Cards -->
+            <div class="stat-grid">
+                <div class="stat-card gold">
+                    <div class="stat-label">Total Employees</div>
+                    <div class="stat-value"><%= attendance.length %></div>
+                    <div class="stat-sub">Registered staff</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-label">Present Today</div>
+                    <div class="stat-value"><%= attendance.filter(r => !r.absent && r.time_in).length %></div>
+                    <div class="stat-sub">Punched in</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-label">Absent Today</div>
+                    <div class="stat-value"><%= attendance.filter(r => r.absent).length %></div>
+                    <div class="stat-sub">Marked absent</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-label">Leave Requests</div>
+                    <div class="stat-value"><%= typeof leave_requests !== 'undefined' ? leave_requests.length : 0 %></div>
+                    <div class="stat-sub">Pending review</div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Punch-In Activity</div>
+                        <div class="chart-subtitle">Total check-ins over the last 7 days</div>
+                    </div>
+                    <span class="chart-badge">Last 7 Days</span>
+                </div>
+                <!-- ✅ Fixed compact height wrapper -->
+                <div class="chart-wrapper">
+                    <canvas id="punchChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Attendance Table -->
+            <div class="section-header">
+                <div>
+                    <div class="section-title">Today's Attendance</div>
+                    <div class="section-divider"></div>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th class="hide-mobile">Code</th>
+                                <th class="hide-mobile">PIN</th>
+                                <th>In Time</th>
+                                <th class="hide-mobile">📍 In Loc</th>
+                                <th>Out Time</th>
+                                <th class="hide-mobile">📍 Out Loc</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% attendance.forEach((r, index) => { %>
+                            <tr>
+                                <td style="color:var(--text-muted);"><%= index + 1 %></td>
+                                <td style="font-weight:600;"><%= r.name %></td>
+                                <td class="hide-mobile" style="color:var(--text-muted);font-family:monospace;"><%= r.emp_code %></td>
+                                <td class="hide-mobile" style="color:var(--text-muted);"><%= r.pin || '—' %></td>
+                                <td><%= r.time_in || '—' %></td>
+
+                                <td class="location-cell hide-mobile">
+                                    <% if (r.location_in && r.location_in !== '—') { %>
+                                        <% const lIn = r.location_in.split('|'); %>
+                                        <% if (lIn.length === 3) { %>
+                                            <a href="https://www.google.com/maps?q=<%= lIn[1] %>,<%= lIn[2] %>"
+                                               target="_blank" rel="noopener noreferrer" class="location-link"
+                                               onclick="event.stopPropagation();" title="<%= lIn[0] %>">
+                                                <svg class="location-icon" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <%= lIn[0].substring(0,20) %><% if(lIn[0].length>20){%>...<% } %>
+                                            </a>
+                                        <% } else { %>
+                                            <span style="color:var(--text-muted);" title="<%= r.location_in %>"><%= r.location_in.substring(0,20) %></span>
+                                        <% } %>
+                                    <% } else { %>
+                                        <span style="color:var(--text-dim);">—</span>
+                                    <% } %>
+                                </td>
+
+                                <td><%= r.time_out || '—' %></td>
+
+                                <td class="location-cell hide-mobile">
+                                    <% if (r.location_out && r.location_out !== '—') { %>
+                                        <% const lOut = r.location_out.split('|'); %>
+                                        <% if (lOut.length === 3) { %>
+                                            <a href="https://www.google.com/maps?q=<%= lOut[1] %>,<%= lOut[2] %>"
+                                               target="_blank" rel="noopener noreferrer" class="location-link"
+                                               onclick="event.stopPropagation();" title="<%= lOut[0] %>">
+                                                <svg class="location-icon" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <%= lOut[0].substring(0,20) %><% if(lOut[0].length>20){%>...<% } %>
+                                            </a>
+                                        <% } else { %>
+                                            <span style="color:var(--text-muted);" title="<%= r.location_out %>"><%= r.location_out.substring(0,20) %></span>
+                                        <% } %>
+                                    <% } else { %>
+                                        <span style="color:var(--text-dim);">—</span>
+                                    <% } %>
+                                </td>
+
+                                <td>
+                                    <% if (r.absent) { %>
+                                        <span class="badge-absent">Absent</span>
+                                        <% if (r.reason) { %><br><small style="color:var(--text-muted);font-size:11px;"><%= r.reason %></small><% } %>
+                                    <% } else { %>
+                                        <span class="badge-present">Present</span>
+                                    <% } %>
+                                </td>
+
+                                <td>
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        <% if (!r.absent) { %>
+                                        <form method="POST" action="/admin/absent/<%= r.id %>" class="d-inline d-flex gap-1 align-items-center">
+                                            <input name="reason" class="form-control" placeholder="Reason" style="width:90px;padding:4px 8px;font-size:12px;">
+                                            <button class="btn-warn" type="submit">Absent</button>
+                                        </form>
+                                        <% } %>
+                                        <form method="POST" action="/delete_employee/<%= r.id %>"
+                                              onsubmit="return confirm('Delete <%= r.name %>?')" class="d-inline">
+                                            <button class="btn-del" type="submit">🗑</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Leave Requests -->
+            <div class="section-header mt-2">
+                <div>
+                    <div class="section-title">Recent Leave Requests</div>
+                    <div class="section-divider"></div>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Employee</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Days</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (typeof leave_requests !== 'undefined' && leave_requests.length > 0) { %>
+                                <% leave_requests.forEach((l, index) => { %>
+                                <tr>
+                                    <td style="color:var(--text-muted);"><%= index + 1 %></td>
+                                    <td style="font-weight:600;"><%= l.name %></td>
+                                    <td><%= new Date(l.from_date).toISOString().split('T')[0] %></td>
+                                    <td><%= new Date(l.to_date).toISOString().split('T')[0] %></td>
+                                    <td>
+                                        <% const days = Math.floor((new Date(l.to_date) - new Date(l.from_date)) / (1000*60*60*24)) + 1; %>
+                                        <span class="badge-info"><%= days %>d</span>
+                                    </td>
+                                    <td style="color:var(--accent);"><%= l.reason %></td>
+                                </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No leave requests found</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ══ ADD EMPLOYEE SECTION ═════════════════════ -->
+        <section id="add">
+            <div class="section-header">
+                <div>
+                    <div class="section-title">Add New Employee</div>
+                    <div class="section-divider"></div>
+                </div>
+            </div>
+            <div class="form-card">
+                <form action="/add_employee" method="post">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Full Name</label>
+                            <input name="name" class="form-control" placeholder="e.g. John Doe" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Employee Code</label>
+                            <input name="emp_code" class="form-control" placeholder="e.g. EMP001" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Password</label>
+                            <input name="password" type="password" class="form-control" placeholder="Set a secure password" required>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <button class="btn-gold" type="submit">Add Employee</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- ══ SEARCH SECTION ═══════════════════════════ -->
+        <section id="search" <% if (query) { %>class="active"<% } %>>
+            <div class="section-header">
+                <div>
+                    <div class="section-title">Search Employees</div>
+                    <div class="section-divider"></div>
+                </div>
+            </div>
+            <div class="form-card mb-4">
+                <form action="/search" method="get" class="d-flex gap-2">
+                    <input name="query" class="form-control" placeholder="Search by name or employee code..."
+                           value="<%= query || '' %>" required>
+                    <button class="btn-gold" type="submit" style="white-space:nowrap;">Search</button>
+                </form>
+            </div>
+
+            <% if (typeof employees !== 'undefined' && employees.length > 0) { %>
+            <div class="table-card">
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr><th>#</th><th>Name</th><th>Employee Code</th></tr>
+                        </thead>
+                        <tbody>
+                            <% employees.forEach((e, index) => { %>
+                            <tr>
+                                <td style="color:var(--text-muted);"><%= index + 1 %></td>
+                                <td style="font-weight:600;"><%= e.name %></td>
+                                <td style="font-family:monospace;color:var(--text-muted);"><%= e.emp_code %></td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <% } %>
+        </section>
+
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+
+    // ── Date badge ──────────────────────────────────
+    document.getElementById('currentDate').textContent =
+        new Date().toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+
+    // ── Chart ───────────────────────────────────────
+    const chartLabels = <%- JSON.stringify(typeof labels !== 'undefined' ? labels : []) %>;
+    const chartCounts = <%- JSON.stringify(typeof counts !== 'undefined' ? counts : []) %>;
+
+    const canvas = document.getElementById('punchChart');
+
+    if (chartLabels.length > 0 && chartCounts.length > 0) {
+        new Chart(canvas, {
             type: 'bar',
             data: {
-                labels: <% - JSON.stringify(typeof labels !== 'undefined' ? labels : []) %>,
+                labels: chartLabels,
                 datasets: [{
-                    data: <% - JSON.stringify(typeof counts !== 'undefined' ? counts : []) %>,
-                    backgroundColor: '#3b82f6',
-                    borderRadius: 8
+                    label: 'Punch-ins',
+                    data: chartCounts,
+                    backgroundColor: 'rgba(201,168,76,0.25)',
+                    borderColor: '#c9a84c',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    hoverBackgroundColor: 'rgba(201,168,76,0.5)'
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,   // ✅ Respects wrapper height
+                animation: { duration: 800, easing: 'easeOutQuart' },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { color: '#fff' },
-                        grid: { color: '#374151' }
+                        ticks: {
+                            color: '#6b7a99',
+                            font: { size: 11, family: 'DM Sans' },
+                            stepSize: 1
+                        },
+                        grid: { color: 'rgba(30,45,69,0.8)' },
+                        border: { color: '#1e2d45' }
                     },
                     x: {
-                        ticks: { color: '#fff' },
-                        grid: { color: '#374151' }
+                        ticks: {
+                            color: '#6b7a99',
+                            font: { size: 11, family: 'DM Sans' }
+                        },
+                        grid: { display: false },
+                        border: { color: '#1e2d45' }
                     }
                 },
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#161d2e',
+                        borderColor: '#1e2d45',
+                        borderWidth: 1,
+                        titleColor: '#c9a84c',
+                        bodyColor: '#e8eaf0',
+                        titleFont: { family: 'DM Sans', size: 12 },
+                        bodyFont: { family: 'DM Sans', size: 13 },
+                        padding: 12,
+                        callbacks: {
+                            label: ctx => `  ${ctx.parsed.y} punch-in${ctx.parsed.y !== 1 ? 's' : ''}`
+                        }
+                    }
                 }
             }
         });
-    </script>
+    } else {
+        canvas.parentElement.innerHTML =
+            '<div style="height:180px;display:flex;align-items:center;justify-content:center;color:#3d4f6e;font-size:13px;">No punch-in data for the last 7 days</div>';
+    }
 
-    <!-- Navigation -->
-    <script>
-        // Handle initial section visibility
-        window.addEventListener('DOMContentLoaded', function () {
-  // If search query exists, keep search section active
-  <% if (query) { %>
-                document.querySelectorAll('section').forEach(section => {
-                    section.classList.remove('active');
-                });
-                document.getElementById('search').classList.add('active');
-  <% } %>
-});
+    // ── Sidebar navigation ──────────────────────────
+    const sectionTitles = { dash: 'Dashboard', add: 'Add Employee', search: 'Search' };
 
-        document.querySelectorAll('.sidebar a[data-target]').forEach(link => {
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                const targetId = this.dataset.target;
+    document.querySelectorAll('.nav-item[data-target]').forEach(link => {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetId = this.dataset.target;
 
-                // Hide all sections
-                document.querySelectorAll('section').forEach(section => {
-                    section.classList.remove('active');
-                });
+            document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
 
-                // Show target section
-                document.getElementById(targetId).classList.add('active');
-            });
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            this.classList.add('active');
+
+            document.getElementById('topbarTitle').textContent = sectionTitles[targetId] || '';
+
+            // Close mobile sidebar
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
         });
-    </script>
+    });
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    // ── Hamburger (mobile) ──────────────────────────
+    document.getElementById('hamburgerBtn').addEventListener('click', function () {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('open');
+    });
+
+    document.getElementById('sidebarOverlay').addEventListener('click', function () {
+        document.getElementById('sidebar').classList.remove('open');
+        this.classList.remove('open');
+    });
+
+    // ── Active section on query param ──────────────
+    <% if (query) { %>
+        document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+        document.getElementById('search').classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelector('[data-target="search"]').classList.add('active');
+        document.getElementById('topbarTitle').textContent = 'Search';
+    <% } %>
+});
+</script>
 
 </body>
-
 </html>
