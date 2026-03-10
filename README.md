@@ -38,8 +38,6 @@ This system supports secure employee tracking with location validation, PIN logi
 
 ---
 
-## 🏗 Project Architecture (MVC Pattern)
-
 # File Tree: nodejs
 
 **Root Path:** `attendance_system_mobile`
@@ -92,6 +90,7 @@ This system supports secure employee tracking with location validation, PIN logi
 │   ├── 📄 admin_dashboard.ejs
 │   ├── 📄 base.ejs
 │   ├── 📄 employee_dashboard.ejs
+│   ├── 📄 index.ejs
 │   ├── 📄 login.ejs
 │   ├── 📄 monthly_report.ejs
 │   └── 📄 reports.ejs
@@ -103,3 +102,5 @@ This system supports secure employee tracking with location validation, PIN logi
 ├── 📄 server.js
 └── ⚙️ vercel.json
 ```
+
+---
