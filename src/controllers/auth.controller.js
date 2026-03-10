@@ -3,6 +3,16 @@ const { safeMatch } = require('../utils/password');
 const { getEmployeeByPin } = require('../services/employee.service');
 
 /**
+ * Show landing page (homepage — indexed by Google)
+ * Redirects already-logged-in users straight to their dashboard
+ */
+function showLandingPage(req, res) {
+    if (req.session && req.session.admin)  return res.redirect('/admin');
+    if (req.session && req.session.emp_id) return res.redirect('/employee');
+    res.render('index');
+}
+
+/**
  * Show login page
  */
 function showLoginPage(req, res) {
@@ -107,13 +117,14 @@ async function loginPin(req, res) {
 function logout(req, res) {
     req.session.destroy((err) => {
         if (err) {
-            console.error('Logout error:', error);
+            console.error('Logout error:', err);
         }
         res.redirect('/login');
     });
 }
 
 module.exports = {
+    showLandingPage,      // ✅ new
     showLoginPage,
     loginCredentials,
     loginPin,

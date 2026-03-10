@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 
+// ✅ Landing page (homepage — public, indexed by Google)
+router.get('/', authController.showLandingPage);
+
 // Login page
-router.get('/', authController.showLoginPage);
 router.get('/login', authController.showLoginPage);
 
 // Login handlers
