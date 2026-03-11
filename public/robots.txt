@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /login
+Disallow: /admin
+Disallow: /employee
+Disallow: /logout
+Disallow: /search
+Disallow: /monthly_report
+Disallow: /reports
+Sitemap: https://attendancesystemmobile.vercel.app/sitemap.xml
